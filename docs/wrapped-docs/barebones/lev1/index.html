@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Level 1 - CIDM Wrapped Barebones</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="icon" type="image/png" href="qld-crest-on-top-2linestacked-b-w.png" />
+
+    <!-- cidm-neo.css introduces style changes to allow the avatar to display as a horizontal list -->
+
+
+    <link rel="stylesheet" type="text/css" href="https://static.auth.staging-services.qld.gov.au/widget/CIDM/profile/latest/css/cidm.css">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+    <script src="https://use.fontawesome.com/d9e3b684a5.js"></script>
+	
+    <script type="text/javascript">
+    var cidmLoaderBaseUrl = 'https://static.auth.staging-services.qld.gov.au/widget/CIDM/profile/latest';
+    requirejs([ cidmLoaderBaseUrl + '/cidm-wrapped-loader.js'], function() {
+		requirejs(['cidm-neo', 'cidm-utils', 'es6-promise','jquery'], function(neo, utils, es6Promise, $) {
+	    $(document).ready(function() {
+            $.qgcidm.initialise({
+                    auth_domain: 'auth.staging-services.qld.gov.au',
+                    attributes_api_url:'https://api-customer-attributes.auth.staging-services.qld.gov.au/v1',
+                    attributes_api_key:'c93B17fVMbaagCAeibtgC6nbiM9ZbJkD2ST1lnfD',
+                    clientID: '8aqIFVFNrhpws8dv3W5C3FANUMfiqzK7',
+                    level: 'Level_1',
+                    returnTo: window.location.href,
+                    logoutUrl: window.location.href + '?status=loggedout',
+                    faq: "https://identity.qld.gov.au/help/faq.html",
+                    authoritative_attributes: {
+                        SharingPreference: true,
+                        Level: true,
+                        QID:true,
+                        DateOfBirth:false,
+                        Email:true,
+                        UserId:true,
+                        AuthenticationMethod:true,
+                        FirstName:false,
+                        FamilyName:false,
+                        MiddleName:false
+                    },
+                    self_asserted_attributes: {
+                        Name:true,
+                        Picture:true,
+                        AustralianBusinessNumber:false,
+                        SamlSubjectId:false,
+                        VANguardCredentialType:false,
+                        ABAUserId:false,
+                        ABAUserName:false,
+                        AUSkeyCommonName:false,
+                        AUSkeyEmailAddress:false,
+                        AUSkeyGivenNames:false,
+                        AUSkeySBRPersonId:false,
+                        AUSkeyStaleCRLMinutes:false,
+                        AUSkeySurname:false
+                    }
+                });
+	        $('#qgcidm-avatar').avatar(); // make the id=qgcidm-avatar an avatar for the login widget
+            $.qgcidm.enable();
+	        //uncomment below to tap into Login and Logout callback chain
+
+	        $('#attribute-data') //whatever id on the page you are wanting to modify
+	          .onLogin(function(me) {
+	            //show attribute data
+	            $(me).text(JSON.stringify($jc.qgcidm.profile.attributes, undefined, 3));
+	          })
+	          .onLogout(function(me) {
+	            // hide the attribute data
+	            $(me).text('You have logged out, attributes will display here after login..');
+	          });
+
+	    });
+	  });
+	});
+    </script>
+  </head>
+ <body>
+ 
+		<div id="qgcidm-avatar" style="text-align:right;width:100%;background:gray;"></div>
+	
+   
+<script>
+
+</script>
+
+<pre id="attribute-data">Attributes will display here after login...
+</pre>
+  </body>
+
+</html>

@@ -1,0 +1,954 @@
+
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CIDM Wrapped - Server Side Auth</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	
+    <link rel="icon" type="image/png" href="qld-crest-on-top-2linestacked-b-w.png" />
+
+    <!-- cidm-neo.css introduces style changes to allow the avatar to display as a horizontal list -->
+	<!-- This page has additional features using jquery, so to avoid racing conditions it is added here. The QGCIDM profile widget will also add jquery to the page a little later in the loading sequence -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+	<!-- end jquery -->
+    <link rel="stylesheet" type="text/css" href="https://static.auth.staging-services.qld.gov.au/widget/CIDM/profile/2.2.1/css/cidm.css">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.2/require.min.js"></script>
+    <script src="https://use.fontawesome.com/d9e3b684a5.js"></script>
+
+
+	
+	
+	<!--SWE example -->
+	    	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta name="viewport" content="width=device-width" />
+    <!--[if !IE]><!--><link href="//fonts.googleapis.com/css?family=Lato:100,300,400,700,900,100italic,300italic,400italic,700italic,900italic" rel="stylesheet" type="text/css" /><!--<![endif]-->
+    <link rel="stylesheet" type="text/css" href="https://static.qgov.net.au/assets/v2/style/qgov.css" media="all" />
+
+	<link href="https://static.qgov.net.au/assets/v2/style/layout-large.css" rel="stylesheet" type="text/css" />
+	<link rel="shortcut icon" href="https://static.qgov.net.au/assets/v2/images/skin/favicon.ico" />
+   <!-- end SWE example -->
+	<style>
+	.container {
+	padding-left:6%;
+	padding-right:6%;}
+	a {
+	text-decoration:none !Important;}
+	.code-buttons {
+						padding-left: 20px !Important;
+						padding-right: 20px !Important;
+						padding-top: 5px !Important;
+						padding-bottom: 5px !Important;
+						border-radius: 5px !Important;
+						background-color: #78BA00 !Important;
+						border-color: #78BA00 !Important;
+						box-shadow: 0px 0px 0px #78BA00; !Important;
+						/*font-weight: bold !Important;*/
+						border: 1px solid #78BA00 !important;
+						color:black;      /* unvisited link */
+				
+	}
+
+	.code-buttons:visited {color:black;}  /* visited link */
+	.code-buttons:hover {color:white;}  /* mouse over link */
+	.code-buttons:active {color:#black;}  /* selected link */
+	.code-buttons:focus {outline:0;}
+	.jwt-box { overflow-wrap: break-word;
+	}
+	.inner-pre { font-family: Courier  !Important;
+	overflow-wrap: break-word;}
+	
+
+	</style>
+	
+	
+	
+  </head>
+ <body id="qld-gov-au" class="residents audience-index residents-index" onload="hideDemos()">
+ 
+ <div class="container">
+     <h1>CIDM Wrapped Developer Guide for server side authentication</h1>
+	 <h2>
+	 <h2>Intended audience</h2>
+	 <p>This developer guide / walkthrough of CIDM is aimed specfically at web server based application developers. It is expected that the reader has a basic understanding of REST services, HTML and CSS. There are loads of useful guides and walkthroughs provided by auth0, it is worth searching their site to supplement this guide, try <a href="https://auth0.com/docs/quickstart/webapp" target="_blank">https://auth0.com/docs/quickstart/webapp</a> and <a href="https://auth0.com/docs/quickstart/backend" target="_blank">https://auth0.com/docs/quickstart/backend</a> as a starting point.
+	 <h2>The authentication code flow</h2>
+	 <p>If you are running a client-server web application and want to manage the customer athentication process from the server side then you have the option of using the 'authentication code flow' method (explained in detail <a href="https://auth0.com/docs/api-auth/tutorials/authorization-code-grant" target="_blank">here</a>). This method does not utilize the profile widget and therefore requires your server to entirely manage the user session and login/logout state. It is simple to get working however will require additional coding / plugging into an existing security library of your choosing (e.g. in the case of Java, the Spring Security framework is a common choice). The steps are as follows: <ul><li>You get your customer to click a login link which takes them through the CIDM Wrapped authentication process</li><li>The customer logs in and is returned to your callback URL with a code in the query parameter</li><li>Your server takes the code from the URL string and passes it along with your Client ID and Client Secrect to the CIDM Wrapped authentication server in exchage for an 'access token' (JWT)</li><li>Your server takes the access token and passes it into the chosen JWT compatible security framework on your server side and manages the session from here on.</li><li>Your server-side can then request additional attributes via a REST call to the CIDM Wrapped Customer Attributes API</ul></p><p>The steps discussed in depth in the next sections.</p>
+	 	 
+	 <h2>Creating a login link</h2>
+	 <p>You can use a library to create a login link, for example there is a Java library here: <a href="https://auth0.com/docs/quickstart/webapp/java-spring-security-mvc/01-login" target="_blank">https://auth0.com/docs/quickstart/webapp/java-spring-security-mvc/01-login</a>. However if you can't find a suitable library for your server-side language then a link can be constructed manually.</p>
+	 <p><strong>The structure of a login URL is as follows: </strong></p>
+	 <div class="inner-pre">
+	 <p>
+https://[auth-domain]/authorize?<br><br>
+
+client_id=[your-client-id]<br><br>
+
+&response_type=code<br><br>
+
+&audience=https://auth.staging-services.qld.gov.au<br><br>
+
+&scope=openid%20[Level_1 or Level_2]<br><br>
+
+&login_hint=[CIDM-AAL1 or CIDM-AAL2]<br><br>
+
+&redirect_uri=[Your callback URL]<br><br> </p></div>
+	 <p><strong>Here is a working example: </strong></p>
+	 <div class="inner-pre">
+<p>
+https://login.auth.staging-services.qld.gov.au/authorize?<br><br>
+
+client_id=8aqIFVFNrhpws8dv3W5C3FANUMfiqzK7<br><br>
+
+&response_type=code<br><br>
+
+&audience=https://auth.staging-services.qld.gov.au<br><br>
+
+&scope=openid%20Level_1&login_hint=CIDM-AAL1<br><br>
+
+&redirect_uri=https://servicesmadesimpler.govnet.qld.gov.au/qgcidm/demo/wrapped-server-side-auth/<br><br>
+</p></div>
+<p><a class="code-buttons" href="https://login.auth.staging-services.qld.gov.au/authorize?client_id=8aqIFVFNrhpws8dv3W5C3FANUMfiqzK7&response_type=code&audience=https://auth.staging-services.qld.gov.au&scope=openid%20Level_1&login_hint=CIDM-AAL1&redirect_uri=https://servicesmadesimpler.govnet.qld.gov.au/qgcidm/demo/wrapped-server-side-auth/">Try it!</a> <br><br>Have a look in the URL bar when you return (you should see a code in the response).</p>
+
+
+	 <h2>Processing authentication response</h2>
+	 <p>When users are successfully returned to your callback URL your webserver will have access to the 'code' querystring parameter.  The code is not much use on its own, however it is an opaque string which enables server side retrieval of an OIDC conformant access token. The code should be collected and stored in memory for the next step.</p>
+
+	 <h2>Getting an Access Token</h2>
+	 <p>In order to authenticate a user to CIDM Wrapped, you need an access token. Since you are getting the access token from the server side, it will last 2 hours. Getting an access token is a simple POST request to our authentication service as detailed below: </p>
+	 <div class="inner-pre"><p>
+	 <strong>Endpoint: </strong>https://login.auth.staging-services.qld.gov.au/oauth/token<br>
+	 <strong>Header: </strong>Content-Type: application/json<br>
+	 <strong>Body:</strong><br>
+{<br>
+  "grant_type": "authorization_code",<br>
+  "client_id": "YOUR_CLIENT_ID",<br>
+  "client_secret": "YOUR_CLIENT_SECRET",<br>
+  "code": "YOUR_AUTHORIZATION_CODE",<br>
+  "redirect_uri": "https://YOUR_APP/callback" //The URL must match exactly the redirect_uri passed to /authorize<br>
+}<br><br>
+<strong>Example body: </strong><br>
+{<br>
+  "grant_type": "authorization_code",<br>
+  "client_id": "8aqIFVFNrhpws8dv3W5C3FANUMfiqzK7",<br>
+  "client_secret": "di4dUO8Fwe**********7CWeq1O6",<br>
+  "code": "AqPbbOoXvmTQIhVI",<br>
+  "redirect_uri": "https://servicesmadesimpler.govnet.qld.gov.au/qgcidm/demo/wrapped-server-side-auth/"<br>
+}<br><br>
+<strong>Example 200 response:</strong><br>
+{<br>
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9EazVRekU0UkRJeVJUazNRekkwTWtJNU1rSkdNamxCTTBOQ016WXlRVVpETUVZeU5VUTRSQSJ9.eyJodHRwczovL2F1dGguc3RhZ2luZy1zZXJ2aWNlcy5xbGQuZ292LmF1L3Nlc3Npb25faWQiOiI1ZWU3NjE2MjIyNzUwOWQ5MDAyYzZmZWM1YjNkOTAzNGFjMGI1NDYxOTRmYmJmYjY1ZTAyYjA4ODhlZWU2Yzk3IiwiaHR0cHM6Ly9hdXRoLnN0YWdpbmctc2VydmljZXMucWxkLmdvdi5hdS9wYXJ0bmVyIjoiQ0lETS1BQUwxIiwiaHR0cHM6Ly9hdXRoLnN0YWdpbmctc2VydmljZXMucWxkLmdvdi5hdS9wYXJ0bmVyX2tleSI6IjBmYTZiMjkwMmJkMDU4ZTY4MjViMmYxNjVjODhlZTUyZmVhMDZjOWFiODA4MzE5ZDlmNjY2MDlhNzUyNGRmMTY0YjAwMWVjODNkMDNlNTcyYjVhNDkxZTcwZjQwNTAyZjlhZGY4YWQ3YzE0ZDRjOTI2YjFkN2FhMzUzZThlMmNjNjNhMmY5NjIwNjFiMDFiMTJlYmFmZWQ3MTQ0OTk2OWEwMDUzYWRlYmZmYzBlMGQ0ZWFhYzhiNTE2N2YzZDA5Y2RhMmY3N2JkNGEwNTFlMWVlZDI4NzYxYmVkNzIzMzIwNDQxNWFjODQ0OGVlZmVjMmNkNWIxODFjZGE1MTU2ZWM1MDczNzllMGNhZDkzNmJkNTU0OSIsImh0dHBzOi8vYXV0aC5zdGFnaW5nLXNlcnZpY2VzLnFsZC5nb3YuYXUvcWlkIjoiZGFlZDQ5YzgtMGY5Ny00NGM0LTlkNjMtOTI4NzdhMWM2MTkxIiwiaHR0cHM6Ly9hdXRoLnN0YWdpbmctc2VydmljZXMucWxkLmdvdi5hdS9sYXN0X2xvZ2luIjoiMjAxOC0xMC0zMFQwNDo0OTo1NC42NzdaIiwiaXNzIjoiaHR0cHM6Ly91YXQucWxkLWdvdi1zdGcuYXV0aDAuY29tLyIsInN1YiI6InNhbWxwfENJRE0tQUFMMXxkYWVkNDljOC0wZjk3LTQ0YzQtOWQ2My05Mjg3N2ExYzYxOTEiLCJhdWQiOlsiaHR0cHM6Ly9hdXRoLnN0YWdpbmctc2VydmljZXMucWxkLmdvdi5hdSIsImh0dHBzOi8vdWF0LnFsZC1nb3Ytc3RnLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE1NDA4Nzc3MTMsImV4cCI6MTU0MDk2NDExMywiYXpwIjoiOGFxSUZWRk5yaHB3czhkdjNXNUMzRkFOVU1maXF6SzciLCJzY29wZSI6Im9wZW5pZCJ9.FgoAP7DDCPKfahi3tx07zLNmo1hzidSjluIXJxOdbB3SWc5XoyHEC5n-qdm0wtZepjsezGHYXXGIZ1igXxPTpC262QBz_x98EXto-KUCu8mPkYEVkyJS5ssuPQLgP7eK5cDGPlMRomDpdRjJsKbcOIv5uXs8gd1Kb9cEScDm0WZ3Jk7voQM82uBQI8Kl_17AP72XIACvGuZBlFF4oDanOzk6NZfDWdmPIeo08dgla-1MBy-ZevhNIIb8YcHvi0TTwItIfE1-WQ_4OxaHVDHMIP1AJHv-WmzjS6iua66CbzEKj57O6UPb1WdFBFUeuVCBAoxZi_WOp-6BaWtEHfgZiQ",<br>
+  "id_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9EazVRekU0UkRJeVJUazNRekkwTWtJNU1rSkdNamxCTTBOQ016WXlRVVpETUVZeU5VUTRSQSJ9.eyJodHRwczovL2F1dGguc3RhZ2luZy1zZXJ2aWNlcy5xbGQuZ292LmF1L2VtYWlsIjoibXItYW5kZXJzb25Ac3BsYXNoLmNvbSIsImh0dHBzOi8vYXV0aC5zdGFnaW5nLXNlcnZpY2VzLnFsZC5nb3YuYXUvcGljdHVyZSI6Imh0dHBzOi8vcy5ncmF2YXRhci5jb20vYXZhdGFyL2U1ZWIxNTkwYzYzMDU3OGVlM2FjMWU3Yzc2MzI2MTVkP3M9NDgwJnI9cGcmZD1odHRwcyUzQSUyRiUyRmNkbi5hdXRoMC5jb20lMkZhdmF0YXJzJTJGbXIucG5nIiwiaHR0cHM6Ly9hdXRoLnN0YWdpbmctc2VydmljZXMucWxkLmdvdi5hdS91c2VyX2lkIjoic2FtbHB8Q0lETS1BQUwxfGRhZWQ0OWM4LTBmOTctNDRjNC05ZDYzLTkyODc3YTFjNjE5MSIsImh0dHBzOi8vYXV0aC5zdGFnaW5nLXNlcnZpY2VzLnFsZC5nb3YuYXUvYXV0aGVudGljYXRpb25tZXRob2QiOiJ1cm46YXU6cWxkOmdvdjphdXRobjpuYW1lczpTQU1MOjIuMDphYzpBQUwyOklSQUwyOklBQUwyIiwiaHR0cHM6Ly9hdXRoLnN0YWdpbmctc2VydmljZXMucWxkLmdvdi5hdS9jbGllbnRJRCI6IjhhcUlGVkZOcmhwd3M4ZHYzVzVDM0ZBTlVNZmlxeks3IiwiaHR0cHM6Ly9hdXRoLnN0YWdpbmctc2VydmljZXMucWxkLmdvdi5hdS9hcHBfbWV0YWRhdGEiOnsibmFtZSI6ImUzNmVmZTNiMzNkZjdmNDBjMDI4ZTJlYmE1ODVkMjJlMzRmMzU2YWE5ZDg2Y2QyYTM4NmZmNWJhNjE0Y2RiZDdmMDU0MjQ5OTQ4MWZhZTgwZjFkZmVlNjg1MDZkZWUyNTY3ODY5NzQwNThhNjU3N2ZjN2E3YjEyNDE5ZmYwNGRhYzJiNjEwNzc3NjAwZmZlNWU0ODk4ZWUwZTIzMDUzZWY3MDkwNjM0NjI4NjI3M2ViMmZkNTE3MTQ1OTFlNzQxOTE1NjkxMGZjZDI0ODVjNzlkODUyYjEyM2ZhYzI0ZDQ4N2I1ZiIsIm5pY2tuYW1lIjoiZTgyNzU2Nzk0ZDU3ZDBjMzY0Nzc1ZTA3Y2JmZTgzN2Y4MWM1MWQyNTc3MzJkYTMxZjAwNzg4M2IwZGUxMzNiNmExYTdhYmMzYjZiMDlmN2NlM2MxOTIzNGU3MDkyZTYxOWFhMzVmYjU1NjQwODI0YjNjOWQwZjFlM2RmMGUzOWViYzIyMmQwM2NlNTc5NjU0YjEwMjM1Yzg0MWU1MzRhZTQ4ODAyZTU4Y2RiOGYyMTVmMjFiNGViMDE2ZDU4Y2NiNzJmZGMyNWQ1YWNjZWMiLCJfZW5jcnlwdGVkIjp7Im5hbWUiOnRydWUsIm5pY2tuYW1lIjp0cnVlfSwic29tZV9maWVsZCI6IlkiLCJwcmV2aW91c19sb2dpbiI6IjIwMTgtMTAtMzBUMDQ6NDk6NTQuNjc3WiIsInFpZCI6ImRhZWQ0OWM4LTBmOTctNDRjNC05ZDYzLTkyODc3YTFjNjE5MSIsInNjb3BlIjoib3BlbmlkIExldmVsXzEifSwiaHR0cHM6Ly9hdXRoLnN0YWdpbmctc2VydmljZXMucWxkLmdvdi5hdS9TaGFyaW5nUHJlZmVyZW5jZSI6IlkiLCJpc3MiOiJodHRwczovL3VhdC5xbGQtZ292LXN0Zy5hdXRoMC5jb20vIiwic3ViIjoic2FtbHB8Q0lETS1BQUwxfGRhZWQ0OWM4LTBmOTctNDRjNC05ZDYzLTkyODc3YTFjNjE5MSIsImF1ZCI6IjhhcUlGVkZOcmhwd3M4ZHYzVzVDM0ZBTlVNZmlxeks3IiwiaWF0IjoxNTQwODc3NzEzLCJleHAiOjE1NDA4ODQ5MTN9.RJMXT9ztO2S-Xlz7vjyPNMZLdHtAiJQ-EOev_92ZtvNbUhiPaH1uJftc8CyzPjSIDGdQpL-s3OoerZXETLaoU2yK-NlVXP_8nR-sv47ZHPfMaGjMkGXMBstEp2iOoVJuwYm7qQXRdqdhD9YCNAD-Dfain6RQ5IoMSEfhIEdsiC4bjzED_KNeNeiLtPGMXtem-gdf9134cc4uiuLFzrBKlSv5dTTweGqgcuFpqkkoekS6DSTbXFI9WJqW3Vbwed0j5BWsqJtaeoKYu_2mUkxRalqn9pj9TRuG8B4HU4hMpMvL6_jHIZ-vVpEntQXOaB3cTZ1bTL39XbbdaiTd3zrMbg",<br>
+  "scope": "openid",<br>
+  "expires_in": 86400,<br>
+  "token_type": "Bearer"<br>
+}<br><br>
+
+<strong>Example 4** response:</strong><br>
+{<br>
+  "error": "invalid_grant",<br>
+  "error_description": "Invalid authorization code"<br>
+}<br><br>
+</p>
+	 </div>
+
+	 <h2>Integrating the Access Token and ID Token</h2>
+	 <p>The tokens returned via the authentication code flow are JWTs and conform to Open ID Connect standards. There is no need to validate these tokens since they are retrieved directly from the authentication service. You can decode the ID token (JWT anatomy info at <a href="https://jwt.io/" target="_blank">jwt.io</a>) and retrieve any necessary values. You can attach the access token to your http session management and security framework. There are plenty of libraries out there which can facilitate this process and auth0 provides numerous quickstart guides at <a href="https://auth0.com/docs/quickstart/backend" target="_blank">https://auth0.com/docs/quickstart/backend</a>.
+
+	 
+
+	<h2>Calling the Customer Attribute API from your server-side</h2>
+<p>In the browser, the $.qgcidm object looks after calling the Customer Attributes API, however if you are verifying a JWT on your server-side then you will need to make a request to the Customer Attributes API directly. This is a REST based API which is aimed to be simple, multi-purposed and compatible with future identity and attribute release frameworks. It handles JWT verification and attribute release in the one API call. Currently it only supports the attributes attached to a QGCIDM account and will be expanded upon in 2019. You can call the Customer Attributes API using a simple GET request from whichever server-side HTTP request library of your choosing.</p>
+<p>Call the test version Customer Attributes API using the following configurations:</p>
+<h4>Endpoint (UAT)</h4>
+<xmp>https://api-customer-attributes.auth.staging-services.qld.gov.au/v1/customer_attributes</xmp>
+<h4>Request Method</h4>
+<xmp>HTTP GET</xmp>
+<h4>Request Headers</h4>
+<xmp>authorization : <Customers JWT Token>
+x-api-key (this is only for testing, won't work in production) : c93B17fVMbaagCAeibtgC6nbiM9ZbJkD2ST1lnfD</xmp>
+
+<h4>Query Parameters (comma separated per attribute type, see Getting Started guide for full list of attributes)</h4>
+<xmp>authoritative_attributes=QID,DateOfBirth,Email,UserId,AuthenticationMethod,FirstName,FamilyName&self_asserted_attributes=Name,Picture,FirstName,FamilyName&sign=false</xmp>
+<h4>Response format</h4>
+<xmp>A successful request (200) will return a JSON formatted response similar to that found in $.qgcidm.profile.attributes. Anything other than 200 indicates a failure in authentication (typically 4xx) or service availability issue (typically 5xx)</xmp>
+<p>Specific documentation will be produced to cover the details of the Custommer Attributes API, in the mean time please refer to the Swagger API definition below for more details:<p>
+<input type="button" class="code-buttons"  id= "toggle-api-def" onclick="toggleApiDefinition()" value="Show / Hide API Definition">
+<div id="cust-attr-api-def" class="demo-func">
+<pre>
+---
+swagger: "2.0"
+info:
+  version: "2017-11-06T11:38:32Z"
+  title: "CIDM NEO Customer Attributes API"
+  description: |
+    The Customer Attributes API supports the retrieval or both Verified and Unverified Customer Attributes
+    
+    ## Version History:
+    * 0.1 Initial Draft of Customer Attributes API.
+    * 0.2 Updated to have a POST and a GET for Customer Attributes.  The GET being a less complex API/request.
+    * 0.3 Removed QID from Urls as they're not available in the JWT
+    * 0.4 Renamed resources to customer_shared and customer_attributes
+
+    ## Security:
+    1. Requires AWS API Gateway Key in the x-api-key header
+    2. Requires Auth0 User JWT in the Authorization header
+
+    ## Usage:
+
+    ### Customer Sharing Preferences
+
+    #### Request:
+    ```
+
+    export CUSTOMER_JWT=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw
+    export API_KEY=cc2f0cbd-be66-431f-8b86-2f8d5ea30625
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H "x-api-key: ${API_KEY}" -H "Authorization: Bearer ${CUSTOMER_JWT}" https://api-customer-attributes.identity.test-services.qld.gov.au/v1/customer_shared
+    ```
+    #### Response:
+    ```JSON
+
+    {
+      "share" : "NOT_ALWAYS"
+    }
+    ```
+
+    ### Customer Attributes
+
+    #### Request:
+    ```
+
+    export CUSTOMER_JWT=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw
+    export API_KEY=cc2f0cbd-be66-431f-8b86-2f8d5ea30625
+
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H "x-api-key: ${API_KEY}" -H "Authorization: Bearer ${CUSTOMER_JWT}" https://api-customer-attributes.identity.test-services.qld.gov.au/v1/customer_attributes?authoritative_attributes=QID,DateOfBirth,Email&self_asserted_attributes=Name,UserId,AuthenticationMethod,Picture,FirstName,FamilyName,Nickname&sign=true
+
+    #Note the below won't actually work on the command line as it's over multiple lines.
+    #Actual request value needs to be a URL encoded string of the JSON object. i.e. JSON.stringify(ATTRIBUTES);
+    export ATTRIBUTES = "\
+      {
+        "attributes": [
+          {
+            "name": "GivenName",
+            "definition": {
+              "pedigree": "SELF_ASSERTED",
+              "signed": true,
+            }
+          },
+          {
+            "name": "FamilyName",
+            "definition": {
+              "pedigree": "AUTHORITATIVE",
+              "signed": true,
+            }
+          },
+          {
+            "name" : "Senior",
+            "definition": {
+              "source": "FORMULA",
+              "formula" : "Age >= 65"
+            }
+          }
+          ]
+      }"
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H "x-api-key: ${API_KEY}" -H "Authorization: Bearer ${CUSTOMER_JWT}" https://api-customer-attributes.identity.test-services.qld.gov.au/v1/customer_attributes?attributes=${ATTRIBUTES}
+
+    ```
+    #### Response:
+    ```JSON
+    {
+      "attributes" : [
+        {
+          "name" : "GivenName",
+          "value": "Jeremy",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "SELF_ASSERTED"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",
+            "pedigree": "SELF_ASSERTED",
+            "signed": true,
+          }
+        },
+        {
+          "name" : "FamilyName",
+          "value": "Ford",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",,
+            "pedigree": "AUTHORITATIVE",
+            "signed": true,
+          }
+        },
+        {
+          "name" : "Senior",
+          "value": "false",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "FORMULA",
+            "signed": false,
+            "formula" : "Age >= 65"
+          }
+        }
+
+      ],
+      "signed_attributes" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw"
+    }
+    ```
+
+    ### Verify Customer Attributes
+
+    #### Request:
+    ```
+
+    export SIGNED_ATTRIBUTES_JWT=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw
+
+    export API_KEY=cc2f0cbd-be66-431f-8b86-2f8d5ea30625
+
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H "x-api-key: ${API_KEY}" -d '{"signed_attributes" :"${SIGNED_ATTRIBUTES_JWT}"}' https://api-customer-attributes.identity.test-services.qld.gov.au/v1/verify_customer_attributes
+
+    ```
+    #### Response:
+    ```JSON
+    {
+      "attributes" : [
+        {
+          "name" : "GivenName",
+          "value": "Jeremy",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",
+            "pedigree": "AUTHORITATIVE",
+            "signed": true,
+          }
+        },
+        {
+          "name" : "FamilyName",
+          "value": "Ford",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",,
+            "pedigree": "AUTHORITATIVE",
+            "signed": true,
+          }
+        }
+    }
+    ```
+
+
+
+
+host: "fx7afs9xvf.execute-api.ap-southeast-2.amazonaws.com"
+basePath: "/v1"
+schemes:
+- "https"
+paths:
+  /health:
+    get:
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: '#/definitions/HealthResponse'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        500:
+          description: "Unknown Server Error."
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - api_key: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        uri: "arn:aws:apigateway:{{ Region }}:lambda:path/2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{ AwsAccount }}:function:{{ LambdaArn }}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+  /customer_shared:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+    get:
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: '#/definitions/CustomerSharingPreference'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - api_key: []
+      - auth0JWTAuthorizer: []
+      x-amazon-apigateway-request-validator: "params-only"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        uri: "arn:aws:apigateway:{{ Region }}:lambda:path/2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{ AwsAccount }}:function:{{ LambdaArn }}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+  /customer_attributes:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+    get:
+      produces:
+      - "application/json"
+      parameters:
+      - name: "authoritative_attributes"
+        in: "query"
+        description: Comma separated list of Attribute Names that are required at an AUTHORITATIVE pedigree
+        required: false
+        type: "string"
+      - name: "self_asserted_attributes"
+        in: "query"
+        description: Comma separated list of Attribute Names that are required at atleast a SELF_ASSERTED pedigree
+        required: false
+        type: "string"
+      - name: "sign"
+        in: "query"
+        description: Boolean flag to indicate if all attributes should be signed
+        required: false
+        type: "string"
+      - name: "Authorization"
+        in: "header"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "HTTP 200 Success Response."
+          schema:
+            $ref: '#/definitions/CustomerAttributesResponse'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        204:
+          description: "No Content.  None of the requested Attributes had a value."
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        400:
+          description: "Bad request. No Attributes requested, or at least one invalid Attributes or Formula was provided. Do not attempt the request until the input has been fixed"
+          schema:
+            $ref: '#/definitions/ValidationError'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        401:
+          description: "Unauthorized request.  Missing, Invalid, or Expired credentials provided"
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        500:
+          description: "Unknown Server Error."
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - api_key: []
+      - auth0JWTAuthorizer: []
+      x-amazon-apigateway-request-validator: "params-only"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        uri: "arn:aws:apigateway:{{ Region }}:lambda:path/2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{ AwsAccount }}:function:{{ LambdaArn }}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        cacheNamespace: "gkwi0g"
+        cacheKeyParameters:
+        - "method.request.querystring.authoritative_attributes"
+        - "method.request.querystring.self_asserted_attributes"
+        - "method.request.querystring.sign"
+        - "method.request.header.Authorization"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+    post:
+      produces:
+      - "application/json"
+      parameters:
+      - name: attributes
+        in: body
+        description: Attributes to Retrieve
+        schema:
+          type: object
+          items:
+            $ref: '#/definitions/CustomerAttributesRequest'
+      responses:
+        200:
+          description: "HTTP 200 Success Response."
+          schema:
+            $ref: '#/definitions/CustomerAttributesResponse'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        204:
+          description: "No Content.  None of the requested Attributes had a value."
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        400:
+          description: "Bad request. No Attributes requested, or at least one invalid Attributes or Formula was provided. Do not attempt the request until the input has been fixed"
+          schema:
+            $ref: '#/definitions/ValidationError'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        401:
+          description: "Unauthorized request.  Missing, Invalid, or Expired credentials provided"
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        500:
+          description: "Unknown Server Error."
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - api_key: []
+      - auth0JWTAuthorizer: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        uri: "arn:aws:apigateway:{{ Region }}:lambda:path/2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{ AwsAccount }}:function:{{ LambdaArn }}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+  /verify_customer_attributes:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+    post:
+      produces:
+      - "application/json"
+      parameters:
+        - name: signed_attributes
+          in: body
+          description: Signed Attributes to verify
+          schema:
+            type: object
+            items:
+              $ref: '#/definitions/VerifyAttributesRequest'
+
+      responses:
+        200:
+          description: "HTTP 200 Success Response."
+          schema:
+            $ref: '#/definitions/VerifyAttributesResponse'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+
+        400:
+          description: "Bad request. Invalid request payload"
+          schema:
+            $ref: '#/definitions/ValidationError'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        401:
+          description: "Unauthorized request. Provided signed_attributes value has been tampered with and must not be trusted"
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        500:
+          description: "Unknown Server Error."
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - api_key: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        uri: "arn:aws:apigateway:{{ Region }}:lambda:path/2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{ AwsAccount }}:function:{{ LambdaArn }}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "x-api-key"
+    in: "header"
+  auth0JWTAuthorizer:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+    x-amazon-apigateway-authtype: "custom"
+    x-amazon-apigateway-authorizer:
+      authorizerUri: "arn:aws:apigateway:{{ Region }}:lambda:path/2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{ AwsAccount }}:function:{{ Product}}AuthorizationLambda/invocations"
+      authorizerResultTtlInSeconds: 300
+      type: "token"
+
+x-amazon-apigateway-gateway-responses:
+  DEFAULT_5XX:
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+  DEFAULT_4XX:
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+x-amazon-apigateway-request-validators:
+  params-only:
+    validateRequestParameters: true
+    validateRequestBody: false
+
+definitions:
+
+
+  CustomerSharingPreference:
+    type: object
+    required: [share]
+    properties:
+      share:
+        type: string
+        enum: [ALWAYS, NOT_ALWAYS]
+
+  CustomerAttributeDefinition:
+    type: object
+    required: [source]
+    properties:
+      source:
+        type: string
+        description: Source of Attribute Value
+        enum: [ATTRIBUTE, FORMULA]
+        default: ATTRIBUTE
+      pedigree:
+        type: string
+        enum: [AUTHORITATIVE, SELF_ASSERTED]
+        default: SELF_ASSERTED
+        description: AUTHORITATIVE or SELF_ASSERTED
+      signed:
+        type: boolean
+        default: false
+        description: True if the Attribute will be signed in the Response.
+      forumla:
+        type: string
+        description: Formula for calculating the Attribute Value (i.e. 'Age > 65') where source is FORMULA
+
+  CustomerAttributeRequest:
+    type: object
+    required: [name]
+    properties:
+      name:
+        type: string
+        description: Name of the Attribute in the Response
+      definition:
+        $ref: '#/definitions/CustomerAttributeDefinition'
+
+  AttributeMetadata:
+    type: object
+    required: [name, value]
+    properties:
+      name:
+        type: string
+        description: Name of the Metadata Attribute
+      value:
+        type: string
+        description: Value of the Metadata Attribute
+
+
+  CustomerAttributesRequest:
+    type: object
+    required: [attributes]
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeRequest'
+
+  CustomerAttributesResponse:
+    type: object
+    required: [attributes]
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeResponse'
+      signed_attributes:
+        type: string
+        description: JWT containing a Payload with each signed Attribute at the top level
+
+  CustomerAttributeResponse:
+    type: object
+    required: [name, value]
+    properties:
+      name:
+        type: string
+        description: Name of the Attribute in the Response
+      value:
+        type: string
+        description: Value of the Attribute in the Response
+      metadata:
+        type: array
+        items:
+          $ref: '#/definitions/AttributeMetadata'
+      definition:
+        $ref: '#/definitions/CustomerAttributeDefinition'
+
+  VerifyAttributesRequest:
+    type: object
+    required: [signed_attributes]
+    properties:
+      signed_attributes:
+        type: string
+        description: JWT returned from the attributes request
+
+  VerifyAttributesResponse:
+    type: object
+    required: [attributes]
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeResponse'
+
+  HealthResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        
+  Error:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      description:
+        type: string
+      link:
+        type: string
+
+  ValidationFailures:
+    type: object
+    properties:
+      property:
+        type: string
+        description: Property name
+      failure_reason:
+        type: string
+        description: Failure reason
+
+  ValidationError:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      description:
+        type: string
+      link:
+        type: string
+      validation_failures:
+        type: array
+        items:
+          $ref: '#/definitions/ValidationFailures'
+</pre>
+</div>
+
+	</div>
+	
+
+
+<script>
+//demo functions
+function hideDemos() {
+    $('.demo-func').hide();
+}
+
+function toggleApiDefinition()
+{
+$('#cust-attr-api-def').toggle();
+return null;
+}
+
+
+</script>
+
+  </body>
+
+</html>

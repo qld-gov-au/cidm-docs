@@ -1,0 +1,2762 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CIDM Neo Setup</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	
+    <link rel="icon" type="image/png" href="qld-crest-on-top-2linestacked-b-w.png" />
+
+    <!-- cidm-neo.css introduces style changes to allow the avatar to display as a horizontal list -->
+	<!-- This page has additional features using jquery, so to avoid racing conditions it is added here. The QGCIDM profile widget will also add jquery to the page a little later in the loading sequence -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+	<!-- end jquery -->
+    <link rel="stylesheet" type="text/css" href="https://static.auth.staging-services.qld.gov.au/widget/CIDM/profile/latest/css/cidm.css">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.2/require.min.js"></script>
+    <script src="https://use.fontawesome.com/d9e3b684a5.js"></script>
+
+
+	
+	
+	<!--SWE example -->
+	    	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta name="viewport" content="width=device-width" />
+    <!--[if !IE]><!--><link href="//fonts.googleapis.com/css?family=Lato:100,300,400,700,900,100italic,300italic,400italic,700italic,900italic" rel="stylesheet" type="text/css" /><!--<![endif]-->
+    <link rel="stylesheet" type="text/css" href="https://static.qgov.net.au/assets/v2/style/qgov.css" media="all" />
+
+	<link href="https://static.qgov.net.au/assets/v2/style/layout-large.css" rel="stylesheet" type="text/css" />
+	<link rel="shortcut icon" href="https://static.qgov.net.au/assets/v2/images/skin/favicon.ico" />
+   <!-- end SWE example -->
+	<style>
+	.container {
+	padding-left:6%;
+	padding-right:6%;}
+	a {
+	text-decoration:none !Important;}
+	.code-buttons {
+						padding-left: 20px !Important;
+						padding-right: 20px !Important;
+						padding-top: 5px !Important;
+						padding-bottom: 5px !Important;
+						border-radius: 5px !Important;
+						background-color: #78BA00 !Important;
+						border-color: #78BA00 !Important;
+						box-shadow: 0px 0px 0px #78BA00; !Important;
+						/*font-weight: bold !Important;*/
+						border: 1px solid #78BA00 !important
+	}
+	.code-buttons:focus {outline:0;}
+	.jwt-box { overflow-wrap: break-word;
+	}
+
+	</style>
+	
+	
+	
+  </head>
+ <body id="qld-gov-au" class="residents audience-index residents-index" onload="hideDemos()">
+ 
+ <div class="container">
+     <h1>CIDM Neo Developer Guide</h1>
+	 <h2>Intended audience</h2>
+	 <p>This developer guide / walkthrough of CIDM Neo is aimed specfically at front-end web developers. It is expected that the reader has a basic understanding of JavaScript, JSON, JQuery, REST services, HTML and CSS.
+	 <h2>How to use this guide</h2>
+	 <p>Ideally, you should run this HTML file as 'index.html' on http://localhost:8080 using a local server (e.g node.js / apache Tomcat etc.). CIDM Neo does requires specific 'callback' URLs, and localhost:8080/index.html is one of the allowed URLs in our test environment. By starting on localhost:8080 you can begin building our your solution design immediately without having to wait for client keys, domain white-listing and allocation of official callback URLs (this will obviously come later).</p>
+	 	 
+	 <h2>Adding the CIDM Neo components into your webpages</h2>
+	  <p>Add the following snippet to the head html, this addresses CIDM Neo css and JavaScript dependencies.</p>
+	 <xmp>
+
+    <link rel="stylesheet" type="text/css" href="https://static.auth.staging-services.qld.gov.au/widget/CIDM/profile/latest/css/cidm.css">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.2/require.min.js"></script>
+    <script src="https://use.fontawesome.com/d9e3b684a5.js"></script>
+	 
+	 </xmp>
+	 
+	 <p id = "initialisation-config"> Then add the following snippet to the body of your html, you can externalise this as a .js file to reduce clutter</p>
+	 
+	 <xmp>
+    <script type="text/javascript">
+    var cidmLoaderBaseUrl = 'https://static.auth.staging-services.qld.gov.au/widget/CIDM/profile/latest';
+    requirejs([ cidmLoaderBaseUrl + '/cidm-neo-loader.js'], function() {
+		requirejs(['cidm-neo', 'cidm-utils', 'es6-promise'], function(neo, utils, es6Promise) {
+	    $(document).ready(function() {
+	            $jc.qgcidm.initialise({
+                    home: 'http//localhost:8080',
+                    domain: 'login.auth.staging-services.qld.gov.au',
+                    service_name: 'CIDM Neo integration walkthrough guide',
+					auth_domain: 'auth.staging-services.qld.gov.au',
+                    attributes_api_url:'https://api.auth.staging-services.qld.gov.au/v1',
+                    attributes_api_key:'DN3x8j0F5b8hxfBakq9h33pkcVuo47FH7qH4eaXY',
+                    clientID: '8aqIFVFNrhpws8dv3W5C3FANUMfiqzK7',
+                    level: 'Level_1',
+                    hub: 'https://static.auth.staging-services.qld.gov.au/hub/hub.html',
+                    returnTo: window.location.href, //you can add query parameters or the hard code the entire URL as desired
+					logoutUrl: window.location.href + '?status=loggedout', //you can change the query parameters or the entire URL as desired
+                    faq: "https://identity.qld.gov.au/help/faq.html",
+                    about: "https://www.my.qld.gov.au/intro/index.html",
+                    myaccount: "https://www.my.qld.gov.au",
+                        authoritative_attributes: {
+                            ShareAlways: false,
+                            Level: false,
+                            QID: true,
+                            DateOfBirth: false,
+                            Email: true,
+                            UserId: false,
+                            AAL: true,
+                            IAAL: true,
+                            IRAL: true,
+                            GivenName: false,
+                            FamilyName: false,
+                            MiddleName: false
+                        },
+                        self_asserted_attributes: {
+                            Picture: true,
+                            PreferredGivenName: false,
+                            PreferredFamilyName: false,
+                            PreferredMiddleName: false,
+                            AustralianBusinessNumber: false,
+                            SamlSubjectId: false,
+                            VANguardCredentialType: false,
+                            ABAUserId: false,
+                            ABAUserName: false,
+                            AUSkeyCommonName: false,
+                            AUSkeyEmailAddress: false,
+                            AUSkeyGivenNames: false,
+                            AUSkeySBRPersonId: false,
+                            AUSkeyStaleCRLMinutes: false,
+                            AUSkeySurname: false
+                            //Nickname:true
+                        }
+                });
+	        $jc('#qgcidm-avatar').avatar(); // make the id=qgcidm-avatar an avatar for the login widget
+	        $jc.qgcidm.enable();
+		
+	        //uncomment below to tap into Login and Logout callback chain
+	        /*
+			$jc.qgcidm._onLogin.add(function(me) {
+				document.getElementById("your-element-id").innerHTML = "<pre>Look I've signed in</pre>";
+                  	});
+                        $jc.qgcidm._onLogout.add(function(me) {
+				console.log("log out - you need to preserve logs to see this");
+                        });
+	        */
+	    });
+	  });
+	});
+    </script>
+	 
+	 </xmp>
+	 	
+		<h2>The profile widget</h2>
+		<p>The profile widget is essentially a set of styled buttons and pre-configured functions which can be placed inside a html element such as a div tag, list item, span tag etc. You simply need to add the id value you set up in the configuration step above to the relevant html element. In this case it is 'qgcidm-avatar'. Please note that there is no in built feature that allows the widget to be swapped dynamically between DOM elements or duplicated on screen. Once logged in, the avatar will either show the user's initials or an image (if the user's social network settings allow access to an image).</p>
+		<p>A 'perfect world' placement of the login widget is shown in the code below (if requested we can supply a complete barebones version of a login page), feel free to use it when testing out the feature (tip: if you have already added the scrips / includes above to a blank html document, then all you need to do is add this tag to your body and you will have a functional widget):</p>
+		<xmp>
+		<div id="qgcidm-avatar" style="text-align:right;width:100%;background:gray;"></div>
+		</xmp>
+		<p>Obviously, your app or site is not this simple, you may need to shoe-horn the widget into place by leveraging existing DOM elements and applying offsets as per the working example from the code below:</p>
+		<xmp>
+		<ul id="tools">
+		  <li class="nav-contact"><a accesskey="4" href="#">Contact us</a></li>
+		    <li  id="header-search">
+		      <form id="search-form" role="search">
+		        <div>					
+		          <label for="search-query" class="visuallyhidden">Search website</label>
+		            <input accesskey="5" type="search" name="query" id="search-query" size="27" value="" placeholder="Search website" />
+                    <button id="search-button" type="submit">Search</button>
+		        </div>
+		      </form>
+		  </li>
+		  <li >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li>
+		  <li class="last-child" id="qgcidm-avatar" style="padding-top:4px"></li>
+		</ul>
+		</xmp>
+		<p>It is recommended that experienced front-end developers complete the widget integration in alignment with your agencies templates, libraries and responsive display standards.</p>
+		<p>The example below shows the widget on the current QGov SWE header, it is not responsive and is only a rough view of what widget placement looks like. It is hoped that a SWE implementation template will be available for the widget in early 2018.</p>
+		<h4>Please login with a test account of your own creation using the widget below to begin exploring the features of the $jc.qgcidm client side object.</h4>
+		 </div>
+		<div id="header-wrapper"><div id="header"><div id="header-bg"></div><div class="box-sizing"><div class="max-width">
+		<h2>Site header</h2>
+		<div id="qg-coa"><a href="#">
+			<!--[if gt IE 8]><!--><img src="https://static.qgov.net.au/assets/v2/images/skin/qg-coa.svg" width="287" height="50" alt="Queensland Government home" /><!--<![endif]-->
+			<!--[if (lte IE 8)&(gt IE 6)]><img src="https://static.qgov.net.au/assets/v2/images/skin/qg-coa.png" width="287" height="50" alt="Queensland Government home" /><![endif]-->
+			<!--[if lte IE 6]><img src="https://static.qgov.net.au/assets/v2/images/skin/qg-coa-ie6.png" width="287" height="50" alt="Queensland Government home" /><![endif]-->
+			<img src="https://static.qgov.net.au/assets/v2/images/skin/qg-coa-print.png" class="print-version" alt="" />
+		</a></div>
+		<ul id="tools">
+			<li class="nav-contact"><a accesskey="4" href="#">Contact us</a></li>
+			<li  id="header-search">
+				<form id="search-form" role="search">
+					<div>
+											
+						<label for="search-query" class="visuallyhidden">Search website</label>
+						<input accesskey="5" type="search" name="query" id="search-query" size="27" value="" placeholder="Search website" />
+                        <button id="search-button" type="submit">Search</button>
+
+					</div>
+				</form>
+
+			</li>
+			<li >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li>
+			<li class="last-child" id="qgcidm-avatar" style="padding-top:4px"></li>
+		</ul>
+		<div id="nav-site"><ul>
+			<li class="nav-residents">
+				<a href="#">For Queenslanders</a>
+			</li>
+			<li class="nav-business">
+				<a href="#">Business and industry</a>
+			</li>
+		</ul></div>
+	</div></div></div></div>
+<!-- endnoindex -->
+     
+     
+    <div id="page-container">
+        <div class="max-width">
+            <div id="breadcrumbs">
+   
+    <ol><li class="nav-home"><a href="#">Queensland Government home</a></li>
+<li class="nav-residents"><a href="#">For Queenslanders</a></li>
+
+        <li class="last-child">Services for Queenslanders</li>
+    </ol>
+</div>            
+           
+        </div>
+    </div>
+	<div class="container">
+<h2>The $jc.qgcidm object</h2>
+<p>The profile widget includes a javascript object called $jc.qgcidm which has a bundle of functionality that can be used in your integration. The main functions are ellaborated below, however you can click the button below for a reference to the detailed object functionality:</p>
+<input type="button" class="code-buttons"  id= "toggle-qgcidm-object-def" onclick="toggleQgcidmObjectDef()" value="Show $jc.qgcidm object functions" >
+
+<div id="qgcidm-object-def" class="demo-func" >
+<h3>initialise(config)  </h3>
+<p>Initialise the profile widget for the current web page. In summary this function performs the following actions:<br>
+1) Read provided configuration values (client id, level, required attribute) provided by the webpage.<br>
+2) Start the profile widget storage provider. $jc.qgcidm.config.hub is used to setup the storage engine.<br>
+3) Detect browser capabilities in terms of iframes and crow window messaging.<br>
+4) Initialise all window message event listeners. Event listeners are used to receive and execute profileAction commands originating from widgets running as modal. for example closing of widget frames or handling authorization results from the CIDM-NEO profile application.<br>
+5) Initialise the session expiration library with some basic config values. This does NOT start session expiration but only configure it.<br>
+
+<h3>enable(e)  </h3>
+<p>Enable the profile widget for the current web page. In summary this function performs the following actions:<br>
+1) Extract, interpret and perform any 'profileAction' parameters from the CIDM-NEO Profile Application in the page URL.<br>
+2) Extract, parse and store any embedded #token parameter in the URL.<br>
+3) Request all attributes specified by configuration. 
+On successful retrieval of a minimum set of attributes (Picture and Email) perform the following:
+     - Execute any onAttributes event handlers.<br>
+     - Enable session expiration countdown.<br>
+     - Associate a generated Profile Menu with specified avatars.<br>
+     - Register the new token in widget domain cookie.<br>
+     - Execute any onLogin event handlers.<br>
+     - Start the authorization sequence (step-up, EOI, sharing) if required.<br>
+<br>
+   
+</p>
+<h3>searchAttribute(nameKey)  </h3>
+<p>Retrieve from the profile widget $jc.qgcidm.profile property any attribute value with name being specified by nameKey. Does the same as getAttributeValue(...). Note: attributes aren't retrieved from the API with this call but from memory.<br>
+<br>
+</p>
+<h3>getSignedAttributes()  </h3>
+<p>Retrieve from the profile widget $jc.qgcidm.profile property all attributes issued and signed by the CIDM-NEO customer attribute API. Note: attributes aren't retrieved from the API with this call but from memory.<br>
+<br>
+</p>
+<h3>getAttributeAccessWarnings()  </h3>
+<p>Retrieve from the profile widget $jc.qgcidm.profile property all warning issued by the CIDM-NEO customer attribute API. Note: attributes aren't retrieved from the API with this call but from memory.<br>
+<br>
+</p>
+<h3>getAttributeValue(nameKey)  </h3>
+<p>Retrieve from the profile widget $jc.qgcidm.profile property any attribute value with name being specified by nameKey. Note: attributes aren't retrieved from the API with this call but from memory.<br>
+<br>
+</p>
+<h3>getAttributes()  </h3>
+<p>Retrieve from the profile widget $jc.qgcidm.profile property all attributes issued by the CIDM-NEO customer attribute API. Note: attributes aren't retrieved from the API with this call but from memory.<br>
+<br>
+</p>
+<h3>getLoginInfo(callback)  </h3>
+<p>Retrieve login information for the current identity from the CIDM-NEO customer_identity API. The value returned by callback should be NOT NULL for any valid customer authentication. This can be used to determine if the current login is valid.<br>
+<br>
+</p>
+<h3>getLoginURL(redirectUrl)  </h3>
+<p>Generate an Auth0 login URL as means of directing the browser to the Auth0 SIGN-IN page. This page will prompt the customer to log in. 
+<br>
+</p>
+<h3>getLogoutURL(e)  </h3>
+<p>Generate an Auth0 login URL as means of directing the browser to the Auth0 SIGN-OUT page. The generated logout URL can be adapted by setting the following in configuration: <br>
+- logoutUrl: This URL will be used as return location after sign-out has been performed. <br>
+- logout_federation: Pass the sign-out to federated identity providers like Google or Microsoft. This will cause the federated account to also sign-out.<br>
+<br>
+</p>
+<h3>getStorage(name, callback)  </h3>
+<p>Retrieve session values from profile widget storage provider. <br>
+Typical keys used to retrieve values are $jc.qgcidm._auth_result, $jc.qgcidm._auth_token, $jc.qgcidm._release_token .<br>
+Example usage:<br>
+<pre>$jc.qgcidm.getStorage( $jc.qgcidm._auth_token, function( token ) { ... } )</pre>
+<br>
+</p>
+<h3>delStorage(name, callback)  </h3>
+<p>
+Delete session values in the profile widget storage provider. 
+Example usage:<br>
+<pre>$jc.qgcidm.delStorage( your item name, function() { ... } )</pre>
+<br>
+</p>
+<h3>setStorage(name, value, callback)  </h3>
+<p>
+Save session values in the profile widget storage provider. 
+Example usage:<br>
+<pre>$jc.qgcidm.setStorage( your item name, your value, function() { ... } )</pre>
+<br>
+</p>
+<h3>onAttributes(callback)  </h3>
+<p>Accepts a handler as callback which will be executed when attributes are successfully retrieved from the CIDM-NEO customer attributes API. ( triggered by $jc.qgcidm.enable(...) and $jc.qgcidm.updateProfile(...))
+<br>
+The callback function will receive all attributes returned from the API.<br>
+<br>
+</p>
+
+<h3>onAuthorized(callback)  </h3>
+<p>Accepts a handler as callback which will be executed when a customer has successfully completed all required authorization steps (like step-up, EOI or Sharing preferences). 
+<br>
+The callback function will receive all authorization result upon execution. Example result: { IAAL: 1, IRAL: 2, cancelledEOI: false, cancelledRelease: false, cancelledStepup: false, errorCode: 0, releaseToken: eyJr...bw, shareAlways: false}.<br>
+<br>
+NOTE: The profile widget will continue executing the onAuthorized callback per page load (or call to $jc.qgcidm.enable(...) ) for the duration of the customer session with the configured client service (clientID as identifier). Once a customer has signed-in again this event will stop being executed. Only after the authorization sequence has been attempted again will the onAuthorized callback be executing again.<br>
+<br>
+</p>
+<h3>onUnAuthorized(callback)  </h3>
+<p>Accepts a handler as callback which will be executed when a customer has prematurely opted (or error) out of a required authorization step (like step-up, EOI or Sharing preferences). 
+<br>
+The callback function will receive all authorization result upon execution. Example result: { IAAL: 1, IRAL: 2, cancelledEOI: false, cancelledRelease: false, cancelledStepup: false, errorCode: 0, releaseToken: eyJr...bw, shareAlways: false}.<br>
+<br>
+NOTE: The profile widget will continue executing the onUnAuthorized callback per page load (or call to $jc.qgcidm.enable(...) ) for the duration of the customer session with the configured client service (clientID as identifier). Once a customer has signed-in again this event will stop being executed. Only after the authorization sequence has been attempted again will the onUnAuthorized callback be executing again.<br>
+<br>
+<h3>onLogin(callback)  </h3>
+<p>Accepts a handler as callback which will be executed when a customer is signed-in.  Whether to execute the onLogin event is determined by the presence of a valid JWT in storage and a minimum set of attributes (picture and email) returned from the customer attributes API for the current JWT.<br>
+<br>
+NOTE: This event will be fired on each page load (or call to $jc.qgcidm.enable(...) ) when the above criterion is met.<br>
+<br>
+</p>
+<h3>onLogout(callback)  </h3>
+<p>Accepts a handler as callback which will be executed just before a customer is signed-out. The logout function will clear token values in storage and cookies.<br>
+<br>
+</p>
+<h3>startAuthorizationSequence()  </h3>
+<p>Starts the authorization sequence. This function will preform the following:<br>
+1) If the $jc.qgcidm.config.authorization_enabled flag is true then continue.<br>
+2) Retrieve any existing authorization results ( for example: { IAAL: 1, IRAL: 2, cancelledEOI: false, cancelledRelease: false, cancelledStepup: false, errorCode: 0, releaseToken: eyJr...bw, shareAlways: false} ). <br>
+3) Make a call to the CIDM-NEO customer identity API to verify that the customer has reached the required AAL level (as per $jc.qgcidm.config.level).<br>
+4) Determine whether any of the configured attributes (in $jc.qgcidm.config) requires sharing privileges.<br>
+5) If any configured attribute require sharing privilege or the customer has not yet reached the required AAL level the authorization sequence start page will be loaded. If the customer has previously cancelled from any of the  authorization steps (step-up, EOI, sharing preferences) or authorization error occurred the authorization sequence will NOT be started and the onUnAuthorized event will be raised instead (note: customer re-sign-in will reset previous result).<br>
+<br>
+With the $jc.qgcidm.config.authorization_events_enabled flag being true the following events will be handled:<br>
+- If the customer has met all requirements in terms of sharing and AAL level the onAuthorized event handler will be executed.<br>
+- If the customer has not yet reached the correct AAL level or sharing is still required BUT the customer has cancelled previously from authorization sequence the onUnAuthorized event handler will be executed.<br>
+<br>
+
+</p>
+<h3>forceAuthorizationSequence()  </h3>
+<p>Starts the authorization sequence by calling $jc.qgcidm.forceAuthorizationSequence().<br>
+This method does the same as startAuthorizationSequence(...) except that it clears all previous authorization sequence cancellation and result values from storage and assumes both $jc.qgcidm.config.authorization_enabled and $jc.qgcidm.config.authorization_events_enabled to be true.<br>
+See startAuthorizationSequence(...) for more detail.<br>
+<br>
+
+</p>
+<h3>updateProfile(callback)  </h3>
+<p>Sends a request to the CIDM-NEO customer attributes API to retrieve all required attributes as specified in $.qgcimd.config. By default it will also request Email and Picture even with no attributes being configured.<br>
+<br>
+On receiving a response from the customer attributes API the returned result object is assigned to $jc.qgcidm.profile and subsequently the onAttributes event is fired.<br>
+<br>
+</p>
+<h3>logout(e)  </h3>
+<p>Executes the onLogin event handler and secondly performs a clean-up of token values stored in cookies and storage ($jc.qgcidm.delStorage(...) ). </p>
+
+<h3>Useful neo variables</h3>
+<pre>
+profile	
+JavaScript Object	{}	
+Object containing all attributes returned from the CIDM-NEO customer attributes API. Used for caching retrieved attributes.
+
+_lastLogin
+string	
+null	
+Last login timestamp as reflected by the current JWT.
+
+_loginType
+string	
+null	
+login type as reflected by the current JWT.
+
+_auth_result
+string	
+authorization_result	
+Constant value representing the key value of a key value pair type storage regime. Used in conjunction with $.qgcidm.getStorage.
+For example: $.qgcidm.getStorage($.qgcidm._auth_result, function( result ){...})
+
+_auth_token
+string	
+access_token	
+Constant value representing the key value of a key value pair type storage regime. Used in conjunction with $.qgcidm.getStorage.
+For example: $.qgcidm.getStorage($.qgcidm._auth_token, function( token ){...})
+
+_release_token
+string	
+release_token
+Constant value representing the key value of a key value pair type storage regime. Used in conjunction with $.qgcidm.getStorage.
+For example: $.qgcidm.getStorage($.qgcidm._release_token, function( token ){...})
+
+_storage_prefix	
+string	
+qgcidm	
+Constant value representing a prefix for all key values used to store values in the profile widget storage. For example: "qgcidm_access_token"
+
+_onAttributes
+$.Callbacks() handler		
+Collection of handlers set by _onAttributes.add(callback) OR $("page element").onAttributes(callback) OR $.qgcidm.onAttributes(callback)
+
+_onAuthorized
+$.Callbacks() 
+handler		
+Collection of handlers set by _onAuthorized.add(callback) OR $("page element").onAuthorized(callback) OR $.qgcidm.onAuthorized(callback)
+
+_onLogin
+$.Callbacks() 
+handler		
+Collection of handlers set by _onLogin.add(callback) OR $("page element").onLogin(callback) OR $.qgcidm.onLogin(callback)
+
+_onLogout
+$.Callbacks() 
+handler		
+Collection of handlers set by _onLogout.add(callback) OR $("page element").onLogout(callback) OR $.qgcidm.onLogout(callback)
+
+_onUnAuthorized
+$.Callbacks() 
+handler		
+Collection of handlers set by _onUnAuthorized.add(callback) OR $("page element").onUnAuthorized(callback) OR $.qgcidm.onUnAuthorized(callback)
+</pre>
+</div>  
+	
+	
+	
+	
+	  <h2>Making configuration changes to the $jc.qgcidm object</h2>
+	  <p>You can configure the the $jc.qgcidm object by passing the config object as an object in the $jc.qgcidm.initialise function (as is done at the top of the page). Alternatively you can modify $jc.qgcidm.config directly and then re-initialize the widget. This is how you access the config:</p>
+	  <xmp>$jc.qgcidm.config;</xmp>
+	  <input type="button" class="code-buttons"  id= "show-config" onclick="showConfig()" value="Test">
+	  <pre class="demo-func" id="display-Neo-config"></pre>
+	  
+	  <p>The primary use case for configuring the the $jc.qgcidm object after the page loads is changing the attribute request and updating the attribute data. The following commands modify and update attributes: </p>
+	  <h3 id="choosing-attributes">What attributes are available</h3>
+	  <p><strong>Self asserted attributes</strong></p>
+	  <p>These are attributes which have come from social media connections such as Google or Microsoft accounts, they include:</p>
+	  <ul><li>Name</li>
+      <li>Picture</li>
+      <li>FirstName</li>
+      <li>FamilyName</li>
+	<li>MiddleName</li>
+	<li>AustralianBusinessNumber</li>
+	<li>SamlSubjectId</li>
+	<li>VANguardCredentialType</li>
+	<li>ABAUserId</li>
+	<li>ABAUserName</li>
+	<li>AUSkeyCommonName</li>
+	<li>AUSkeyEmailAddress</li>
+	<li>AUSkeyGivenNames</li>
+	<li>AUSkeySBRPersonId</li>
+	<li>AUSkeyStaleCRLMinutes</li>
+	<li>AUSkeySurname</li>
+	  </ul>
+	  <p><strong>Authoritative attributes</strong></p>
+	  <p>These are attributes which have come from an authoritative source such as QGCIDM:</p>
+	  <ul><li>QID</li>
+      <li>DateOfBirth</li>
+      <li>Email</li>
+      <li>UserId</li>
+      <li>FirstName</li>
+      <li>FamilyName</li>
+	  </ul>
+	  <h3 id="removing-adding-attributes">Remove an attribute</h3>
+<xmp>$jc.qgcidm.config.authoritative_attributes.QID = false;
+$jc.qgcidm.updateProfile();</xmp>
+	<input type="button" class="code-buttons"  id= "update-false" onclick="qgcidmUpdateAttributes(false)" value="Test">
+<h3>Include an attribute</h3>
+<xmp>$jc.qgcidm.config.authoritative_attributes.QID = true;
+$jc.qgcidm.updateProfile();</xmp>
+<input type="button" class="code-buttons"  id= "update-true" onclick="qgcidmUpdateAttributes(true)" value="Test">
+
+
+	<pre id="display-config">The attibute list will be displayed here</pre>
+	  
+	<h2>Accessing attribute data on the browser-side</h2>
+	<p>We store attributes within the $jc.qgcidm object, the attributes can be accessed as a JSON array after the user logs in. Use the following command:</p>
+	<xmp>$jc.qgcidm.profile.attributes;</xmp>
+	<input type="button" class="code-buttons"  id= "show-hide-profile" onclick="qgcidmProfile()" value="Test">
+		<pre class="demo-func" id="display-profile"></pre>
+	<h2 id="on-login-logout-events">Event driven attribute population (i.e. tapping into the on-login and on-logout callback chain)</h2>
+	<p>You can tap into the login / logout callback chain by adding code under the initialsation as shown in the example <a href="#initialisation-config">above</a>. This page has been enabled, and the output of the demo code below is shown underneath: </p>
+	<xmp>
+$jc.qgcidm._onLogin.add(function(me) {
+	document.getElementById("your-element-id").innerHTML = "<pre>Look I've signed in</pre>";
+	});
+$jc.qgcidm._onLogout.add(function(me) {
+	console.log("log out - you need to preserve logs to see this");
+	});
+	</xmp>
+	<p>This demo code is running in the element below:</p>
+	<h4 id="your-element-id">demo here</h4>
+
+		<h2 id="get-attribute">Accessing specific attribute values</h2>
+		<p>We have added a super simple way to get an attribute value in your client application, simply call the $jc.qgcidm.searchAttribute() function as per below: </p>
+		
+	<xmp>$jc.qgcidm.searchAttribute('Email')</xmp>
+	<input type="button" class="code-buttons"  id= "search-email-attribute" onclick="qgcidmGetAttribute('Email')" value="Test">
+	<xmp>$jc.qgcidm.searchAttribute('QID') //note this won't show if you have removed it in the previous section of the guide</xmp>
+	<input type="button" class="code-buttons"  id= "search-QID-attribute" onclick="qgcidmGetAttribute('QID')" value="Test">
+	<xmp>$jc.qgcidm.searchAttribute('AAL')</xmp>
+	<input type="button" class="code-buttons"  id= "search-authmeth-attribute" onclick="qgcidmGetAttribute('AAL')" value="Test">
+
+	<pre id="display-attribute">Attribute will display here</pre>
+	
+
+
+
+	<h2>Customers with 100 points of ID attached to their CIDM identity</h2>
+	<p>Users can currently provide evidence of identity online with QGCIDM to achieve Authentication Assurance Level 2 (AAL2) i.e 100 points of ID. You can require that only customers with AAL2 interact with your service. This enables you to build more personalised customer experiences when the identity is proven to 100 points. If the customer allows the sharing of their details, then you also get access to a verifed first name, last name and date of birth (useful for integrating with your back-office systems).</p>
+	<p>If you have a service which only wants AAL2 customers then simply specify 'Level_2' as the level in your <a href="#initialisation-config"> initialisation configuration</a> (please note that if they don't have AAL2 they will be asked to go through the evidence of identity process and provide 100 points of identity)</p>
+    <h2>Promoting a user from AAL1 to AAL2</h2>
+	<p>It is common by default to log users in as AAL1 (which only requires a QGOV account or another approved credential provider such as Google). If a part of your service requires additional evidence of identity (EOI), then you can offer customers to complete an EOI process online. CIDM Neo enables a re-authentication flow that will take the user through the EOI process and return them (if successful) with an AAL2 token along with access to the attributes they have agreed to share with your service (e.g. First name, last name date of birth).</p>
+	<p>The $jc.qgcidm object makes this easy, as shown in a simple HTML example below:</p>
+
+	<xmp><input type="button" class="your-class"  id= "promote-to-aal2" onclick="promoteLoginLevel()" value="Strengthen your QGOV identity to 100 points">
+<script>
+  function promoteLoginLevel()
+    {
+      $jc.qgcidm.config.level = 'Level_2'; //increase authentication level
+      $jc.qgcidm.enable();
+    }
+</script></xmp>
+    <p><strong>Why not give it a try?</strong></p>
+	<input type="button" class="code-buttons"  id= "promote-to-aal2" onclick="promoteLoginLevel()" value="Strengthen your QGOV identity to 100 points">
+	<p>If you have already completed EOI with this account then you will return automatically with an AAL2 token</p>
+	<p>Hint: since you are in CIDM test mode you can use the following mock data to complete EOI: <ul><li>SMS / Email confirmation code (if required) - 400040</li><li>Birth Certificate registration number - 11111111</li><li>Medicare Card - 2  111111111</li></ul>
+	
+
+
+	<h2>Managing Access Tokens</h2>
+	<p>CIDM Neo uses Access Tokens to authenticate a user session. Access Tokens are a JSON Web Token (JWT) format and operate as bearer tokens, hence anybody else with access to the JWT can impersonate that user in systems that use the JWT to authenticate requests.</p><p>More information about JWTs can be found at <a href="https://jwt.io" target="_blank">jwt.io</a>.</p><p>It is critical that the customer's Access Token is not exposed, leaked or placed on a page where it could be lifted via a cross-site scripting attack.</p><p>The CIDM Neo Cross Site Storage Hub provides a centralised storage of JWT and allows only approved domains to access to the token. They are stored under the namespace 'qgcidm_' to avoid conflicts with any other applications and this prefix is automatically prepnended to requests made to the storage hub. 
+	</p><p>When customers logout, or their session times out, the JWT is removed from the Cross Site Storage Hub automatically. However when re-authenticating via a link (e.g. promoting a customer to AAL2) the JWT is not removed by default (as the customer is neither logged out nor timed out). The background scripts will not remove the previous AAL1 token as it is still perfectly valid, so it is important to flush the Cross Site Storage Hub when promoting to AAL2 to avoid your new token getting stuck and unused in the customer's address bar. Always keep an eye out for this when testing your solution.</p><p>The $jc.qgcidm object provides several functions for interactions with the CIDM Neo Cross Site Storage Hub shown below:</p>
+	<xmp>   $jc.qgcidm.getStorage(a,function(b){});  //e.g. log the JWT: $jc.qgcidm.getStorage('access_token',function(value){ console.log(value)}); //note that 'qgcidm_' prefix is not required here</xmp>
+	<xmp>   $.qgcdim.setStorage(a,function(b){});  //there are no known agency use cases for this function</xmp>
+	<xmp>   $jc.qgcidm.delStorage(a,b,c..); //e.g. remove JWT and session timers $jc.qgcidm.delStorage('access_token','modified','started');</xmp>
+	<xmp>   $jc.qgcidm.session_expired(); //signs the user out of CIDM Neo, clears local storage and provides an alert to indicate the session has expired</xmp>
+	<xmp>   $jc.qgcidm.logout(); //simply signs the user out of CIDM Neo and clears local storage.</xmp>
+	
+		
+	<h2 id="getting-jwt">Using CIDM Neo to do backend authentication</h2>
+	<p>When a customer signs in using CIDM Neo they receive a JWT which can be sent to your application server as part of a customer' HTTP request (e.g. a form submission). You can then collect the JWT on your server-side and send it to the CIDM Customer Attributes API to authenticate and identify the the customer making the request. There are various patterns and symantics around sending JWT in HTTP requests, however they are typically sent in an 'Authorization' header sometimes with or without the prefix 'Bearer ', ultimately it is up to you to manage the transmission of JWT between your client and server. We recommend thorough penetration testing of your implementation prior to production release. CIDM Neo is regularly penetration tested and the CIDM team can answer questions you may have in relation to product security.</p>
+	<h3>Getting the JWT</h3>
+	<p>In order to pass the JWT to your server-side, you will first need to get the access to JWT from your browser. This can be done by creating a global JWT variable as follows:</p>
+	
+	<xmp><script>
+var qgcidmGlobalJwt = '';
+function qgcidmStoreJwt()
+{
+   qgcidmGetJwt(function(jwt)
+	{qgcidmGlobalJwt = jwt;});
+}
+function qgcidmGetJwt(callback)
+{
+      $jc.qgcidm.getStorage('access_token',function(value){ callback(value)});
+}
+</script></xmp>
+<input type="button" class="code-buttons"  id= "getting-jwt" onclick="qgcidmStoreJwt()" value="Test">
+	<div id="jwt-div" class="jwt-box demo-func">
+	<p id="display-jwt">JWT will display here</p>
+	</div>
+
+	<h3>Calling the Customer Attribute API from your server-side</h3>
+<p>In the browser, the $jc.qgcidm object looks after calling the Customer Attributes API, however if you are verifying a JWT on your server-side then you will need to make a request to the Customer Attributes API directly. This is a REST based API which is aimed to be simple, multi-purposed and compatible with future identity and attribute release frameworks. It hanles JWT verification and attribute release in the one API call. Currently it only supports the attributes attached to a QGCIDM account and will be expanded upon in 2018. You can call the Customer Attributes API using a simple GET request from whichever server-side HTTP request library of your choosing.</p>
+<p>Call the test version Customer Attributes API using the following configurations:</p>
+<h4>Endpoint (UAT)</h4>
+<xmp>https://api.auth.staging-services.qld.gov.au/v1/customer_attributes</xmp>
+<h4>Request Method</h4>
+<xmp>HTTP GET</xmp>
+<h4>Request Headers</h4>
+<xmp>authorization : <Customers JWT Token>
+x-api-key (this is only for testing, won't work in production) : DN3x8j0F5b8hxfBakq9h33pkcVuo47FH7qH4eaXY</xmp>
+
+<h4>Query Parameters (any combination of the below, comma separated per attribute type)</h4>
+<xmp>authoritative_attributes=QID,DateOfBirth,Email,UserId,GivenName,FamilyName&self_asserted_attributes=Name,Picture,PreferredGivenName,PreferredFamilyName&sign=false</xmp>
+<h4>Response format</h4>
+<xmp>A successful request (200) will return a JSON formatted response similar to that found in $jc.qgcidm.profile.attributes. Anything other than 200 indicates a failure in authentication (typically 4xx) or service availability issue (typically 5xx)</xmp>
+<p>Specific documentation will be produced to cover the details of the Custommer Attributes API, in the mean time please refer to the Swagger API definition below for more details:<p>
+<input type="button" class="code-buttons"  id= "toggle-api-def" onclick="toggleApiDefinition()" value="Show / Hide API Definition">
+<div id="cust-attr-api-def" class="demo-func">
+<xmp>
+swagger: '2.0'
+info:
+  version: '2017-11-06T11:38:32Z'
+  title: CIDM NEO Customer Attributes API
+  description: >
+    The Customer Attributes API supports the retrieval of both Verified and
+    Unverified Customer Attributes
+
+
+    ## Version History:
+
+    * 0.1 Initial Draft of Customer Attributes API.
+
+    * 0.2 Updated to have a POST and a GET for Customer Attributes.  The GET
+    being a less complex API/request.
+
+    * 0.3 Removed QID from Urls as they're not available in the JWT
+
+    * 0.4 Renamed resources to customer_shared and customer_attributes
+
+    * 0.5 Add admin APIS
+
+    * 0.6 Add MigrateIdentityDetail and correct typos
+
+    * 0.7 Change VerifyEOIRequest model to include "claimed" attributes
+
+    * 0.8 Change to query parameters for admin/identities request
+
+    * 0.9 Add claimed attributes to VerifyEOIRequest
+
+    * 0.10 Update EventNotification structure
+
+    * 0.11 Changed "forumla" to "formula". Added "customer_identity/close"
+
+    * 0.12 Changed to use DELETE /admin/identities instead of the
+    /customer_identity/close
+
+    * 0.13 Changed /admin/identitites PUT to return QID
+
+    * 0.14 Added event_level enum to EventNotification, extra value to
+    event_status, extra structure to message, referer and user_agent
+
+    * 0.15 Add admin endpoint to return attribute metadata for requested
+    attributes
+
+    * 0.19 Add /admin/identities GET to retrieve all accounts for a given QID.
+    Add /admin/identities DELETE to delete linked identity
+
+    * 0.20 Add warning array to attribute responses to allow return of issues
+    with attributes in request
+    
+    * 0.21 Add identity_status to MigrateIdentityResponse for flagging if an identity has been created or updated in create/update.
+
+
+    ## Security:
+
+    1. Requires AWS API Gateway Key in the x-api-key header
+
+    2. Requires Auth0 User JWT in the Authorization header
+
+
+    ## Usage:
+
+
+    ### Accounts and Identities
+
+
+    An Account relates to the Authentication provider a User has logged in with.
+    e.g. Google, Microsoft, QGOV.
+
+
+    An Identity is where all attributes are attached to.
+
+
+    An Account will only have one Identity, however with Account Linking an
+    Identity may have more than one Account.
+
+
+    ### Customer Sharing Preferences
+
+
+    #### Request:
+
+    ```
+
+
+    export
+    CUSTOMER_JWT=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw
+
+    export API_KEY=cc2f0cbd-be66-431f-8b86-2f8d5ea30625
+
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H
+    "x-api-key: ${API_KEY}" -H "Authorization: Bearer ${CUSTOMER_JWT}"
+    https://api-customer-attributes.identity.test-services.qld.gov.au/v1/customer_shared
+
+    ```
+
+    #### Response:
+
+    ```JSON
+
+
+    {
+      "share" : "NOT_ALWAYS"
+    }
+
+    ```
+
+
+    ### Customer Attributes
+
+
+    #### Request:
+
+    ```
+
+
+    export
+    CUSTOMER_JWT=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw
+
+    export API_KEY=cc2f0cbd-be66-431f-8b86-2f8d5ea30625
+
+
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H
+    "x-api-key: ${API_KEY}" -H "Authorization: Bearer ${CUSTOMER_JWT}"
+    https://api-customer-attributes.identity.test-services.qld.gov.au/v1/customer_attributes?authoritative_attributes=QID,DateOfBirth,Email&self_asserted_attributes=Name,UserId,AuthenticationMethod,Picture,FirstName,FamilyName,Nickname&sign=true
+
+
+    #Note the below won't actually work on the command line as it's over
+    multiple lines.
+
+    #Actual request value needs to be a URL encoded string of the JSON object.
+    i.e. JSON.stringify(ATTRIBUTES);
+
+    export ATTRIBUTES = "\
+      {
+        "attributes": [
+          {
+            "name": "GivenName",
+            "definition": {
+              "pedigree": "SELF_ASSERTED",
+              "signed": true,
+            }
+          },
+          {
+            "name": "FamilyName",
+            "definition": {
+              "pedigree": "AUTHORITATIVE",
+              "signed": true,
+            }
+          },
+          {
+            "name" : "Senior",
+            "definition": {
+              "source": "FORMULA",
+              "formula" : "Age >= 65"
+            }
+          }
+          ]
+      }"
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H
+    "x-api-key: ${API_KEY}" -H "Authorization: Bearer ${CUSTOMER_JWT}"
+    https://api-customer-attributes.identity.test-services.qld.gov.au/v1/customer_attributes?attributes=${ATTRIBUTES}
+
+
+    ```
+
+    #### Response:
+
+    ```JSON
+
+    {
+      "attributes" : [
+        {
+          "name" : "GivenName",
+          "value": "Jeremy",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "SELF_ASSERTED"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",
+            "pedigree": "SELF_ASSERTED",
+            "signed": true,
+          }
+        },
+        {
+          "name" : "FamilyName",
+          "value": "Ford",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",,
+            "pedigree": "AUTHORITATIVE",
+            "signed": true,
+          }
+        },
+        {
+          "name" : "Senior",
+          "value": "false",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "FORMULA",
+            "signed": false,
+            "formula" : "Age >= 65"
+          }
+        }
+
+      ],
+      "signed_attributes" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw"
+    }
+
+    ```
+
+
+    ### Verify Customer Attributes
+
+
+    #### Request:
+
+    ```
+
+
+    export
+    SIGNED_ATTRIBUTES_JWT=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw
+
+
+    export API_KEY=cc2f0cbd-be66-431f-8b86-2f8d5ea30625
+
+
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H
+    "x-api-key: ${API_KEY}" -d '{"signed_attributes"
+    :"${SIGNED_ATTRIBUTES_JWT}"}'
+    https://api-customer-attributes.identity.test-services.qld.gov.au/v1/verify_customer_attributes
+
+
+    ```
+
+    #### Response:
+
+    ```JSON
+
+    {
+      "attributes" : [
+        {
+          "name" : "GivenName",
+          "value": "Jeremy",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",
+            "pedigree": "AUTHORITATIVE",
+            "signed": true,
+          }
+        },
+        {
+          "name" : "FamilyName",
+          "value": "Ford",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",,
+            "pedigree": "AUTHORITATIVE",
+            "signed": true,
+          }
+        }
+    }
+
+    ```
+host: api.auth.services.qld.gov.au
+basePath: /v1
+schemes:
+  - https
+paths:
+  /customer_events:
+    get:
+      summary: Retrieves usage for the authenticated user based on the given criteria
+      description: >
+        Retrieves the Events of the nominated type for the authenticated user.
+        Supports view usage
+      produces:
+        - application/json
+      parameters:
+        - name: event_categories
+          type: string
+          in: query
+          description: Comma separated list of event_categories to include.
+        - name: event_types
+          type: string
+          in: query
+          description: Comma separated list of event_types to include
+          required: false
+        - name: date_from
+          type: string
+          format: date-time
+          in: query
+          description: Earliest event date to query
+          required: false
+        - name: date_to
+          type: string
+          format: date-time
+          in: query
+          description: Latest event date to query
+          required: false
+        - $ref: '#/parameters/page_offset'
+        - $ref: '#/parameters/page_limit'
+      responses:
+        '200':
+          description: HTTP 200 Success Response.
+          schema:
+            $ref: '#/definitions/EventSummaryResponse'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '400':
+          description: >-
+            Bad request. Either event_type was not supplied, or one or more
+            query parameters were an invalid format. Do not attempt the request
+            until the input has been fixed
+          schema:
+            $ref: '#/definitions/ValidationError'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '401':
+          description: >-
+            Unauthorized request.  Missing, Invalid, or Expired credentials
+            provided
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '404':
+          description: The specified Event Type was not found
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '500':
+          description: Unknown Server Error.
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+      security:
+        - api_key: []
+        - auth0JWTAuthorizer: []
+      x-amazon-apigateway-request-validator: params-only
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            requestParameters:
+              integration.request.header.Accept-Encoding: '''utf8'''
+        uri: 'http://{{ InternalUri }}/rest/customer_events'
+        passthroughBehavior: when_no_match
+        httpMethod: GET
+        contentHandling: CONVERT_TO_TEXT
+        connectionType: VPC_LINK
+        connectionId: '{{ VpcLinkId }}'
+        type: http_proxy
+  /customer_identity:
+    options:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: when_no_match
+        type: mock
+    get:
+      summary: Retrieves core Session based Identity Authentication details
+      description: >
+        Retrieves core Session based Identity Authentication details.  Allows
+        callers to determine if StepUp, EOI, or SharingPreferences is required
+        prior to retrieving Attributes
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: HTTP 200 Success Response.
+          schema:
+            $ref: '#/definitions/CustomerIdentitySession'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '401':
+          description: >-
+            Unauthorized request.  Missing, Invalid, or Expired credentials
+            provided
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '500':
+          description: Unknown Server Error.
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+      security:
+        - api_key: []
+        - auth0JWTAuthorizer: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            requestParameters:
+              integration.request.header.Accept-Encoding: '''utf8'''
+        uri: 'http://{{ InternalUri }}/rest/customer_identity'
+        passthroughBehavior: when_no_match
+        httpMethod: GET
+        contentHandling: CONVERT_TO_TEXT
+        connectionType: VPC_LINK
+        connectionId: '{{ VpcLinkId }}'
+        type: http_proxy
+  /customer_attributes:
+    options:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: when_no_match
+        type: mock
+    get:
+      produces:
+        - application/json
+      parameters:
+        - name: authoritative_attributes
+          in: query
+          description: >-
+            Comma separated list of Attribute Names that are required at an
+            AUTHORITATIVE pedigree
+          required: false
+          type: string
+        - name: self_asserted_attributes
+          in: query
+          description: >-
+            Comma separated list of Attribute Names that are required at, at
+            least, a SELF_ASSERTED pedigree
+          required: false
+          type: string
+        - name: sign
+          in: query
+          description: Boolean flag to indicate if all attributes should be signed
+          required: false
+          type: string
+      responses:
+        '200':
+          description: HTTP 200 Success Response.
+          schema:
+            $ref: '#/definitions/CustomerAttributesResponse'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '204':
+          description: No Content. None of the requested Attributes had a value.
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '400':
+          description: >-
+            Bad request. No Attributes requested, or at least one invalid
+            Attribute or Formula was provided. Do not attempt the request until
+            the input has been fixed
+          schema:
+            $ref: '#/definitions/ValidationError'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '401':
+          description: >-
+            Unauthorized request.  Missing, Invalid, or Expired credentials
+            provided
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '500':
+          description: Unknown Server Error.
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+      security:
+        - api_key: []
+        - auth0JWTAuthorizer: []
+      x-amazon-apigateway-request-validator: params-only
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            requestParameters:
+              integration.request.header.Accept-Encoding: '''utf8'''
+        uri: 'http://{{ InternalUri }}/rest/customer_attributes'
+        passthroughBehavior: when_no_match
+        httpMethod: GET
+        contentHandling: CONVERT_TO_TEXT
+        connectionType: VPC_LINK
+        connectionId: '{{ VpcLinkId }}'
+        type: http_proxy
+    post:
+      produces:
+        - application/json
+      parameters:
+        - name: attributes
+          in: body
+          description: Attributes to Retrieve
+          schema:
+            type: object
+            items:
+              $ref: '#/definitions/CustomerAttributesRequest'
+      responses:
+        '200':
+          description: HTTP 200 Success Response.
+          schema:
+            $ref: '#/definitions/CustomerAttributesResponse'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '204':
+          description: No Content. None of the requested Attributes had a value.
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '400':
+          description: >-
+            Bad request. No Attributes requested, or at least one invalid
+            Attribute or Formula was provided. Do not attempt the request until
+            the input has been fixed
+          schema:
+            $ref: '#/definitions/ValidationError'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '401':
+          description: >-
+            Unauthorized request. Missing, Invalid, or Expired credentials
+            provided
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '500':
+          description: Unknown Server Error.
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+      security:
+        - api_key: []
+        - auth0JWTAuthorizer: []
+      x-amazon-apigateway-request-validator: body-only
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            requestParameters:
+              integration.request.header.Accept-Encoding: '''utf8'''
+        uri: 'http://{{ InternalUri }}/rest/customer_attributes'
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        contentHandling: CONVERT_TO_TEXT
+        connectionType: VPC_LINK
+        connectionId: '{{ VpcLinkId }}'
+        type: http_proxy
+  /verify_customer_attributes:
+    options:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: when_no_match
+        type: mock
+    post:
+      produces:
+        - application/json
+      parameters:
+        - name: signed_attributes
+          in: body
+          description: Signed Attributes to verify
+          schema:
+            type: object
+            items:
+              $ref: '#/definitions/VerifyAttributesRequest'
+      responses:
+        '200':
+          description: HTTP 200 Success Response.
+          schema:
+            $ref: '#/definitions/VerifyAttributesResponse'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '400':
+          description: Bad request. Invalid request payload
+          schema:
+            $ref: '#/definitions/ValidationError'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '401':
+          description: >-
+            Unauthorized request. Provided signed_attributes value has been
+            tampered with and must not be trusted
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+        '500':
+          description: Unknown Server Error.
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+      security:
+        - api_key: []
+      x-amazon-apigateway-request-validator: body-only
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            requestParameters:
+              integration.request.header.Accept-Encoding: '''utf8'''
+        uri: 'http://{{ InternalUri }}/rest/verify_customer_attributes'
+        passthroughBehavior: when_no_match
+        httpMethod: POST
+        contentHandling: CONVERT_TO_TEXT
+        connectionType: VPC_LINK
+        connectionId: '{{ VpcLinkId }}'
+        type: http_proxy
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: x-api-key
+    in: header
+  auth0JWTAuthorizer:
+    type: apiKey
+    name: Authorization
+    in: header
+    x-amazon-apigateway-authtype: custom
+    x-amazon-apigateway-authorizer:
+      authorizerUri: >-
+        arn:aws:apigateway:{{ Region
+        }}:lambda:path/2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{
+        AwsAccount }}:function:{{ Product}}AuthorizationLambda/invocations
+      authorizerResultTtlInSeconds: 300
+      type: token
+  auth0ServiceJWTAuthorizer:
+    type: apiKey
+    name: Authorization
+    in: header
+    x-amazon-apigateway-authtype: custom
+    x-amazon-apigateway-authorizer:
+      authorizerUri: >-
+        arn:aws:apigateway:{{ Region
+        }}:lambda:path/2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{
+        AwsAccount }}:function:{{
+        Product}}ServiceAuthorizationLambda/invocations
+      authorizerResultTtlInSeconds: 300
+      type: token
+x-amazon-apigateway-gateway-responses:
+  DEFAULT_5XX:
+    responseTemplates:
+      application/json: |
+        {
+          "code" : "401",
+          "message" : "Unauthorized",
+          "description" : "Unauthorized"
+        }
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
+      gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
+      gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
+  BAD_REQUEST_PARAMETERS:
+    statusCode: 400
+    responseTemplates:
+      application/json: |
+        {
+          "code" : "400",
+          "message" : "Invalid Request Parameters",
+          "description" : "Invalid input",
+          "validation_failures" : [
+            {
+               "property" : "request",
+               "failure_reason" : "$context.error.message"
+             } , {
+               "property" : "params",
+               "failure_reason" : "$context.error.validationErrorString"
+             }
+          ]
+        }
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
+      gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
+      gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
+  BAD_REQUEST_BODY:
+    statusCode: 400
+    responseTemplates:
+      application/json: |
+        {
+          "code" : "400",
+          "message" : "Invalid JSON or Payload content",
+          "description" : "Invalid input",
+          "validation_failures" : [
+            {
+               "property" : "request",
+               "failure_reason" : "$context.error.message"
+             } , {
+               "property" : "body",
+               "failure_reason" : "$context.error.validationErrorString"
+             }
+          ]
+        }
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
+      gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
+      gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
+  INVALID_API_KEY:
+    statusCode: 401
+    responseTemplates:
+      application/json: |
+        {
+          "code" : "401",
+          "message" : "Invalid API KEY",
+          "description" : "Unauthorized"
+        }
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
+      gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
+      gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
+  UNAUTHORIZED:
+    statusCode: 401
+    responseTemplates:
+      application/json: |
+        {
+          "code" : "401",
+          "message" : "Unauthorized",
+          "description" : "Unauthorized"
+        }
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
+      gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
+      gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
+  ACCESS_DENIED:
+    statusCode: 403
+    responseTemplates:
+      application/json: |
+        {
+          "code" : "403",
+          "message" : "Forbidden",
+          "description" : "Forbidden"
+        }
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
+      gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
+      gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
+  DEFAULT_4XX:
+    responseTemplates:
+      application/json: |
+        {
+          "code" : "4XX",
+          "message" : "$context.error.message",
+          "description" : "Client Error"
+        }
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: '''GET,OPTIONS'''
+      gatewayresponse.header.Access-Control-Allow-Origin: '''*'''
+      gatewayresponse.header.Access-Control-Allow-Headers: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
+x-amazon-apigateway-request-validators:
+  params-only:
+    validateRequestParameters: true
+    validateRequestBody: false
+  body-only:
+    validateRequestParameters: false
+    validateRequestBody: true
+  body-and-params:
+    validateRequestParameters: true
+    validateRequestBody: true
+parameters:
+  qid:
+    name: qid
+    in: query
+    type: string
+    description: Unqiue Customer Identifier
+  page_offset:
+    name: page_offset
+    in: query
+    description: Current page number
+    required: false
+    type: integer
+    format: int32
+    default: 0
+    minimum: 0
+  page_limit:
+    name: page_limit
+    in: query
+    description: Limits the number of returned items
+    required: false
+    type: integer
+    format: int32
+    default: 10
+    minimum: 10
+    maximum: 100
+    multipleOf: 10
+definitions:
+  EventTypesResponse:
+    type: object
+    properties:
+      event_types:
+        type: array
+        items:
+          $ref: '#/definitions/EventType'
+  EventType:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Name of the Event Type
+      version:
+        type: integer
+        format: int32
+        description: Version of the Event Type
+  EventNotification:
+    description: A representation of CIDM Neo event data for audit logging
+    type: object
+    required:
+      - timestamp
+      - event_id
+      - event_type
+      - event_source
+      - event_status
+    properties:
+      qid:
+        description: Queensland Government Identity
+        type: string
+      ga360_id:
+        description: >-
+          client id provided by Google Analytics, multiple can be passed in for
+          session unification purposes
+        type: array
+        items:
+          type: string
+      ip:
+        description: ipv4 or ipv6 address associated with customer
+        type: string
+      user_id:
+        description: Authentication service user Id value e.g. Auth0 user_id
+        type: string
+      cet_interaction_id:
+        description: >-
+          Customer Enquiry Tracking ID, if available, unique to the customer's
+          enquiry
+        type: string
+      service_group_id:
+        description: SIR service grouping ID
+        type: string
+      interaction_id:
+        description: SIR interaction ID
+        type: string
+      service_context:
+        description: SIR service context
+        type: string
+      cidm_neo_client_id:
+        description: Authentication service agency ID value e.g. Auth0 client_id
+        type: string
+      user_agent:
+        description: browser user agent
+        type: string
+      referer:
+        description: web URL of service generating event (if available)
+        type: string
+      origin:
+        description: web origin of service generating event (if available)
+        type: string
+      auth_session_id:
+        description: unique identifier for a customer's authenticated session
+        type: string
+      auth_details:
+        description: additional unmapped details from the auth0 logs
+        type: object
+      component_id:
+        description: OSSSIO Component ID as per Component Monitoring Framework
+        type: string
+      aws_arn:
+        description: Unique AWS infrastructure identifier
+        type: string
+      cidm_neo_env:
+        description: CIDM Neo system environment
+        type: string
+      relevant_version:
+        description: 'Version of API, function or application where the event occurred'
+        type: string
+      associated_release:
+        description: >-
+          Release associated with the version of API, function or application
+          where the event occurred
+        type: string
+      module_name:
+        description: Application module where the event occurred
+        type: string
+      class_name:
+        description: Java application class file name
+        type: string
+      function_name:
+        description: Function name where runtime event occurred
+        type: string
+      line_of_code:
+        description: Line number in the code to signify where the event occurred
+        type: number
+      journey_id:
+        description: Identifier for microservice tracing of an individual journey
+        type: string
+      segment_id:
+        description: >-
+          Identifier for microservice tracing of a segment within an individual
+          journey
+        type: string
+      external_event_id:
+        description: 'event ID generated by external system such as Auth0, lambda or GreenID'
+        type: string
+      journey_type:
+        description: >-
+          standardised name for a particular microservice flow, enums based on
+          BRS
+        type: string
+        enum:
+          - qgov_authentication
+          - create_qgov_sign_in
+          - prove_id
+          - sign_out
+          - qgov_forgotten_password
+          - qgov_change_username
+          - update_mobile
+          - change_name
+          - update_sharing_preference
+          - close_identity
+          - account_linking
+      segment_type:
+        description: >-
+          standardised name for a segment that occurs within microservice flows,
+          enums based on BRS
+        type: string
+        enum:
+          - validate_authentication_request
+          - provide_sign_in_options
+          - create_id_first_time_usage
+          - check_username_diff_credential_type
+          - sign_in_with_third_party_cred_provider
+          - provide_link_or_create_option
+          - link_sign_in_to_identity
+          - provide_auth_step_up_option
+          - request_eoi
+          - green_id_form
+          - process_eoi_response
+          - store_attributes_and_meta
+          - send_attribute_storage_notification
+          - check_sharing_preference
+          - provide_sharing_options
+          - process_sharing_choice
+          - send_authentication_response
+          - send_new_user_welcome_email
+          - provide_new_qgov_input_form
+          - validate_new_qgov_input_data
+          - verify_email_address
+          - store_new_qgov_sign_in
+          - sign_out_client_side
+          - provide_username_input_form
+          - validate_forgot_pw_input
+          - active_session_pw_change_request
+          - send_verification_code
+          - provide_verification_code_input
+          - check_verification_code
+          - provide_new_pw_input
+          - validate_new_pw
+          - store_new_pw
+          - send_pw_change_notification
+          - provide_change_username_input_form
+          - validate_change_username_input
+          - store_new_qgov_username
+          - active_session_change_mobile_request
+          - provide_update_mobile_input_form
+          - validate_update_mobile_input
+          - store_updated_mobile_number
+          - send_mobile_updated_notification
+          - active_session_change_name_request
+          - store_changed_name
+          - active_session_change_sharing_request
+          - provide_sharing_pref_input_form
+          - validate_sharing_pref_input
+          - store_updated_sharing_preference
+          - active_session_close_account_request
+          - provide_close_account_input_form
+          - deactivate_identity_and_sign_in_accounts
+          - send_identity_closure_notification
+          - active_session_link_accounts
+          - provide_link_account_input_form
+          - link_account_to_identity
+          - recalculate_credential_strength
+          - supply_evidence_of_linkage
+          - unlink_account_from_identity
+      component_action:
+        description: >-
+          standardised name for an action being performed by the OSSSIO
+          component where the event occurred
+        type: string
+      external_event_type:
+        description: event taxonomy inherited from external event log
+        type: string
+      event_id:
+        description: unique identifier for a single event
+        type: string
+      event_type:
+        description: standardised convention for categorising the type of event occurring
+        type: string
+        enum:
+          - id_created
+          - id_search_result
+          - mob_verified
+          - redirect_url_received
+          - attributes_stored
+          - mob_change_request
+          - ac_linked
+          - ac_unlinked
+          - id_closed
+          - greenid_request
+          - greenid_response
+          - eoi_doc_verified
+          - change_name_request
+          - request_username_change
+          - username_changed
+          - verification_code_sent
+          - verification_code_checked
+          - input_validated
+          - form_rendered
+          - username_conflict
+          - attribute_meta_store
+          - customer_notification_sent
+          - sharing_pref_checked
+          - email_verified
+          - ac_stored
+          - change_pw_requested
+          - ac_closed
+          - credential_strength_calculated
+          - twilio_request
+          - twilio_response
+          - attributes_request
+          - log_data_delivery
+          - database_backup
+          - identity_migrated
+          - eoi_doc_migrated
+          - error_page_shown
+          - database_write
+          - database_read
+      event_source:
+        description: Descriptive name of application or component generating the event
+        type: string
+      event_level:
+        description: Priority or relevance categories for use in filters
+        type: string
+        enum:
+          - TRACE
+          - INFO
+          - DEBUG
+          - WARN
+          - ERROR
+          - FATAL
+      event_status:
+        description: 'Success, fail or alert indicator of the event'
+        type: string
+        enum:
+          - success
+          - fail
+          - alert
+      timestamp:
+        description: >-
+          Current time stamp value when the event occurred or as close as
+          possible to the time
+        type: string
+        format: date-time
+      logged_time:
+        description: time stamp value when the event was logged
+        type: string
+        format: date-time
+      message:
+        description: >-
+          an object with a value and metadata field. value is the message of the
+          event, short form, metadata is an object containing further key pairs
+          of data considered relevant to the message
+        type: object
+        properties:
+          value:
+            description: a string containing the text of the message
+            type: string
+          metadata:
+            description: an object containing useful data relating to the message
+            type: object
+      message_verbose:
+        description: >-
+          an object with a value and metadata field. value is the message of the
+          event, long form, metadata is an object containing further key pairs
+          of data considered relevant to the message
+        type: object
+        properties:
+          value:
+            description: a string containing the text of the verbose message
+            type: string
+          metadata:
+            description: an object containing useful data relating to the verbose message
+            type: object
+  RecordEventResponse:
+    type: object
+    properties:
+      request_id:
+        type: string
+        description: Unique Identifer generated for the Event. For logging purposes.
+  ResumeVerificationResponse:
+    type: object
+    required:
+      - qid
+      - verification_id
+      - verification_token
+    properties:
+      qid:
+        type: string
+        description: the QID of the existing user
+      verification_id:
+        type: string
+        description: Verification Id to use in subsequent calls
+      verification_token:
+        type: string
+        description: Token to use for resuming an existing Verification Session
+  InitialiseVerificationRequest:
+    type: object
+    required:
+      - qid
+      - verification_id
+      - verification_token
+    properties:
+      qid:
+        type: string
+        description: the QID of the existing user
+      verification_id:
+        type: string
+        description: Verification ID to identify a new EOI request
+      verification_token:
+        type: string
+        description: Token to use for resuming an existing Verification Session
+  DocumentVerificationRequest:
+    type: object
+    required:
+      - qid
+      - verification_token
+      - document_identifier
+    properties:
+      qid:
+        type: string
+        description: the QID of the existing user
+      verification_token:
+        type: string
+        description: Token to use for resuming an existing Verification Session
+      document_identifier:
+        type: string
+        description: 'Document Identifer from the Provider (e.g. qldregodvs, passportdvs)'
+      document_verification_status:
+        type: string
+        description: Document Verification Status
+        enum:
+          - STARTED
+          - VERIFIED
+          - FAILED
+          - ABORTED
+  EOIVerificationResponse:
+    type: object
+    required:
+      - qid
+      - verification_token
+    properties:
+      qid:
+        type: string
+        description: the QID of the existing user
+      verification_status:
+        type: string
+        description: the Verification status
+        enum:
+          - INPROGRESS
+          - VERIFIED
+          - CANCELLED
+  VerifyEOIRequest:
+    type: object
+    required:
+      - qid
+      - verification_token
+      - attributes
+    properties:
+      qid:
+        type: string
+        description: the QID of the existing user
+      verification_token:
+        type: string
+        description: Token to use for resuming an existing Verification Session
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeDetail'
+  AbortEOIRequest:
+    type: object
+    required:
+      - qid
+      - verification_token
+      - fail_reason
+    properties:
+      qid:
+        type: string
+        description: the QID of the existing user
+      verification_token:
+        type: string
+        description: Token to use for resuming an existing Verification Session
+      fail_reason:
+        type: string
+        description: Document Verification Status
+        enum:
+          - USER_CANCELLED
+          - PROVIDER_CANCELLED
+          - EOI_ATTEMPTS_EXCEEDED
+  CustomerSharingPreference:
+    type: object
+    required:
+      - share
+    properties:
+      share:
+        type: string
+        enum:
+          - ALWAYS
+          - NOT_ALWAYS
+  AccountSearchResponse:
+    type: object
+    required:
+      - accounts
+    properties:
+      accounts:
+        type: array
+        items:
+          $ref: '#/definitions/AccountSummary'
+  AccountSummary:
+    type: object
+    required:
+      - partner_id
+      - account_id
+    properties:
+      partner_id:
+        type: string
+        description: 'the Partner Identifier (e.g. Google, QGOV)'
+      qid:
+        type: string
+        description: the Identity QID this Account is linked to
+      email:
+        type: string
+        description: the Email address associated with this Account
+      account_id:
+        type: string
+        description: the Account Identifier for this Partner
+      mobile:
+        type: string
+        description: Identity Management Mobile number if it exists
+  IdentitySummary:
+    type: object
+    required:
+      - qid
+    properties:
+      qid:
+        type: string
+        description: the QID of the existing user
+      email:
+        type: string
+        description: Account Management Email if it exists
+      mobile:
+        type: string
+        description: Account Management Mobile number if it exists
+      created_timestamp:
+        type: string
+        format: date-time
+        description: When this identity was created
+      modified_timestamp:
+        type: string
+        format: date-time
+        description: When this identity was last modified
+  IdentityMobile:
+    type: object
+    required:
+      - mobile
+    properties:
+      mobile:
+        type: string
+        description: Mobile Phone number
+  AccountEmail:
+    type: object
+    required:
+      - email
+    properties:
+      email:
+        type: string
+        description: Email Address
+      verified:
+        type: boolean
+        default: false
+        description: Flag to indicate the Email address has been verified
+  IdentityDetail:
+    type: object
+    required:
+      - partner_id
+      - partner_key
+      - account_identifier
+    properties:
+      qid:
+        type: string
+        description: the QID of the existing user
+      partner_id:
+        type: string
+        description: The Id of the partner that the user logs in with
+      partner_key:
+        type: string
+        description: The key (eg. email address) that identifies the user with the partner
+      account_identifier:
+        type: string
+        description: Unique Account Identifier for this provider
+      account_email:
+        type: string
+        description: Email address associated with this Account
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeDetail'
+  MigrateIdentityDetail:
+    type: object
+    required:
+      - qid
+      - partner_id
+      - partner_key
+      - account_identifier
+      - create_timestamp
+      - modified_timestamp
+      - share_always_flag
+    properties:
+      qid:
+        type: string
+        description: the QID of the existing user
+      partner_id:
+        type: string
+        description: The Id of the partner that the user logs in with
+      partner_key:
+        type: string
+        description: The key (eg. email address) that identifies the user with the partner
+      account_identifier:
+        type: string
+        description: Unique Account Identifier for this provider
+      account_email:
+        type: string
+        description: Email address associated with this Account
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeDetail'
+      eoi_documents:
+        type: array
+        items:
+          $ref: '#/definitions/EOIDocument'
+      create_timestamp:
+        type: string
+        format: date-time
+        description: When this identity was created in Classic
+      modified_timestamp:
+        type: string
+        format: date-time
+        description: When this identity was last modified in Classic
+      share_always_flag:
+        type: boolean
+        default: false
+        description: Flag to indicate this preference was set in Classic
+  EOIDocument:
+    type: object
+    required:
+      - document_type_id
+      - verified_datetime
+    properties:
+      document_type_id:
+        type: string
+        description: Document identifier of document used to verify attributes
+      verified_datetime:
+        type: string
+        format: date-time
+        description: Timestamp of when document used to verify attributes
+  IdentitySteppedUpRequest:
+    type: object
+    required:
+      - access_token
+      - stepup_method
+      - stepup_data
+    properties:
+      access_token:
+        type: string
+        description: Current Authentication JWT to register as stepped up
+      stepup_method:
+        type: string
+        description: Method used to perform Stepup
+        enum:
+          - MOBILE
+          - EMAIL
+          - MFA
+      stepup_data:
+        type: string
+        description: >-
+          Input used to perform Stepup. e.g. Mobile number when stepup_method is
+          MOBILE
+  CustomerIdentitySession:
+    type: object
+    required:
+      - qid
+      - AAL
+      - share_always
+    properties:
+      qid:
+        type: string
+        description: QID of the Authenticated User
+      AAL:
+        $ref: '#/definitions/AuthenticationStrength'
+      share_always:
+        type: boolean
+        description: >-
+          Indicates if the User has chosen to always share their identity
+          attributes
+  AuthenticationStrength:
+    type: object
+    required:
+      - AAL
+      - IAAL
+      - IRAL
+    properties:
+      AAL:
+        type: string
+        description: >
+          Authentication Assurance Level indicates the level of confidence the
+          service provider has in the premise that the customer using a service
+          is in fact the customer registered to access the service.
+      IAAL:
+        type: string
+        description: >
+          Identity Authentication Assurance Level is the measure used for the
+          level of assurance provided by the authentication process which occurs
+          each time a service is used
+      IRAL:
+        type: string
+        description: >
+          Identity Registration Assurance Level – the level of assurance of the
+          identity of the person that is desired. This level is achieved by
+          using an appropriate process to verify their real-world identity.
+  IdentityAttributeReleaseRequest:
+    type: object
+    required:
+      - access_token
+      - client
+    properties:
+      access_token:
+        type: string
+        description: Current Authenticated Users access_token JWT
+      client:
+        type: string
+        description: Identifier of the service requesting these attributes
+      share_always:
+        type: string
+        description: Flag to indicate the Users global sharing preference
+        enum:
+          - 'Y'
+          - 'N'
+      attributes_released:
+        type: array
+        description: Array of Attribute Names to be released
+        items:
+          type: string
+  AttributeReleaseResponse:
+    type: object
+    required:
+      - attribute_release_token
+    properties:
+      attribute_release_token:
+        type: string
+        description: >-
+          token that is required by the Customer Attributes API to release
+          attributes
+  MigrateIdentityResponse:
+    type: object
+    required:
+      - migration_status
+      - qid
+      - identity_status
+    properties:
+      migration_status:
+        type: string
+        enum:
+          - ACCEPTED
+          - COMPLETED
+      qid:
+        type: string
+        description: the QID that has been created / updated
+      identity_status:
+        type: string
+        enum:
+          - CREATED
+          - UPDATED
+          - CLOSED
+      access_warnings:
+        type: array
+        items:
+          $ref: '#/definitions/AttributeAccessDetail'
+  EventSummaryResponse:
+    type: object
+    required:
+      - qid
+      - event_type
+      - event_count
+    properties:
+      qid:
+        type: string
+        description: the QID of the existing user
+      event_type:
+        type: string
+        description: Event Type for this Summary
+      event_count:
+        type: number
+        description: Count of Events that matched the input query
+      last_event_date:
+        type: string
+        format: date-time
+        description: Date Time (UTC) of the last event
+  CustomerAttributeDefinition:
+    type: object
+    required:
+      - source
+    properties:
+      source:
+        type: string
+        description: Source of Attribute Value
+        enum:
+          - ATTRIBUTE
+          - FORMULA
+        default: ATTRIBUTE
+      pedigree:
+        type: string
+        enum:
+          - AUTHORITATIVE
+          - SELF_ASSERTED
+        default: SELF_ASSERTED
+        description: >-
+          Indicates the Attribute Pedigree. Can be either AUTHORITATIVE or
+          SELF_ASSERTED
+      signed:
+        type: boolean
+        default: false
+        description: True if the Attribute will be signed in the Response.
+      formula:
+        type: string
+        description: >-
+          Formula for calculating the Attribute Value (i.e. 'Age > 65') where
+          source is FORMULA
+  CustomerAttributeRequest:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: Name of the Attribute in the Response
+      definition:
+        $ref: '#/definitions/CustomerAttributeDefinition'
+  AttributeMetadata:
+    type: object
+    required:
+      - name
+      - value
+    properties:
+      name:
+        type: string
+        description: Name of the Metadata Attribute
+      value:
+        type: string
+        description: Value of the Metadata Attribute
+  CustomerAttributesRequest:
+    type: object
+    required:
+      - attributes
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeRequest'
+  AttributesMetadataResponse:
+    type: object
+    required:
+      - release_required
+      - required_aal
+      - attribute_metadata
+    properties:
+      release_required:
+        type: boolean
+        description: >-
+          Flag indicating whether any one of the requested attributes require
+          release
+      required_aal:
+        type: string
+        description: The maximum AAL level required for the set of attributes requested
+      attribute_metadata:
+        type: array
+        items:
+          $ref: '#/definitions/AttributeAccessDetail'
+  AttributeAccessDetail:
+    type: object
+    required:
+      - name
+      - attribute_status
+    properties:
+      name:
+        type: string
+        description: Name of the Attribute requested
+      attribute_status:
+        type: string
+        enum:
+          - OK
+          - INVALID_NAME
+          - NOT_AVAILABLE
+          - EOI_REQUIRED
+          - STEP_UP_REQUIRED
+          - RELEASE_REQUIRED
+          - NOT_PERSISTABLE
+        default: OK
+        description: Flag indicating the status of the attribute
+      release_required:
+        type: boolean
+        description: >-
+          Flag indicating whether the attribute is shareable without explicit
+          release
+      required_aal:
+        type: string
+        description: >-
+          required AAL level that the user needs to have achieved to get this
+          attribute
+  CustomerAttributesResponse:
+    type: object
+    required:
+      - attributes
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeDetail'
+      signed_attributes:
+        type: string
+        description: JWT containing a Payload with each signed Attribute at the top level
+      access_warnings:
+        type: array
+        items:
+          $ref: '#/definitions/AttributeAccessDetail'
+  CustomerAttributeDetail:
+    type: object
+    required:
+      - name
+      - attribute_type
+      - metadata
+      - definition
+    properties:
+      attribute_type:
+        type: string
+        enum:
+          - STRING
+          - DATE
+          - DATETIME
+          - BOOLEAN
+          - INTEGER
+          - NUMERIC
+          - BYTE
+          - ADDRESS
+      name:
+        type: string
+        description: Name of the Attribute in the Response
+      metadata:
+        type: array
+        items:
+          $ref: '#/definitions/AttributeMetadata'
+      definition:
+        $ref: '#/definitions/CustomerAttributeDefinition'
+      value:
+        type: string
+        description: Default String Value of the Attribute in the Response
+      boolean_value:
+        $ref: '#/definitions/BooleanAttributeValue'
+      date_value:
+        $ref: '#/definitions/DateAttributeValue'
+      datetime_value:
+        $ref: '#/definitions/DateTimeAttributeValue'
+      integer_value:
+        $ref: '#/definitions/IntegerAttributeValue'
+      numeric_value:
+        $ref: '#/definitions/NumericAttributeValue'
+      byte_value:
+        $ref: '#/definitions/ByteArrayAttributeValue'
+      address_value:
+        $ref: '#/definitions/AddressAttributeValue'
+  BooleanAttributeValue:
+    type: object
+    required:
+      - value
+    properties:
+      value:
+        type: boolean
+  DateTimeAttributeValue:
+    type: object
+    required:
+      - value
+    properties:
+      value:
+        type: string
+        format: date-time
+  DateAttributeValue:
+    type: object
+    required:
+      - value
+    properties:
+      value:
+        type: string
+        format: date
+  NumericAttributeValue:
+    type: object
+    required:
+      - value
+    properties:
+      value:
+        type: number
+  IntegerAttributeValue:
+    type: object
+    required:
+      - value
+    properties:
+      value:
+        type: integer
+        format: int32
+  ByteArrayAttributeValue:
+    type: object
+    required:
+      - value
+    properties:
+      value:
+        type: string
+        format: byte
+  AddressAttributeValue:
+    type: object
+    required:
+      - value
+    properties:
+      value:
+        $ref: '#/definitions/CustomerAddress'
+  VerifyAttributesRequest:
+    type: object
+    required:
+      - signed_attributes
+    properties:
+      signed_attributes:
+        type: string
+        description: JWT returned from the attributes request
+  VerifyAttributesResponse:
+    type: object
+    required:
+      - attributes
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeDetail'
+  CustomerAddress:
+    type: object
+    required:
+      - address_line_1
+      - location
+      - state_code
+      - postcode
+    properties:
+      address_start_date:
+        type: string
+        format: date
+      address_end_date:
+        type: string
+        format: date
+      address_line_1:
+        type: string
+        description: This is the first line of the address.
+        maxLength: 50
+      address_line_2:
+        type: string
+        description: This is the second line of the address.
+        maxLength: 50
+      address_line_3:
+        type: string
+        description: This is the third line of the address.
+        maxLength: 50
+      lot_number:
+        type: string
+      location:
+        type: string
+        description: 'This is the location (suburb, locality name) of the address.'
+        maxLength: 46
+      state_code:
+        type: string
+        description: This is the State Code of the address. (e.g. 'QLD')
+        maxLength: 3
+      postcode:
+        type: string
+      country_code:
+        type: string
+        description: This is the two letter ISO 3166 Country Code (e.g. 'AU')
+        minLength: 2
+        maxLength: 2
+      latitude:
+        type: number
+        format: double
+        description: 'Latitude of the Locality, if available.'
+      longitude:
+        type: number
+        format: double
+        description: 'Longitude of the Locality, if available.'
+  HealthResponse:
+    type: object
+    properties:
+      status:
+        type: string
+  Error:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      description:
+        type: string
+      link:
+        type: string
+  ValidationFailures:
+    type: object
+    properties:
+      property:
+        type: string
+        description: Property name
+      failure_reason:
+        type: string
+        description: Failure reason
+  ValidationError:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      description:
+        type: string
+      link:
+        type: string
+      validation_failures:
+        type: array
+        items:
+          $ref: '#/definitions/ValidationFailures'
+</xmp>
+</div>
+
+	
+	<h2>Centralising your CIDM Neo Callback URL</h2>
+	<p>If you have multiple web pages in your app where the customer can login (e.g a sign-in button in your header template) then you need to manage customer redirection from a central callback URL. Anymore than 10 callback URLs starts to become an administrative burdon, so if you have 10s or 100s of pages in your app or site then you need to set up a single callback URL, and save the return URL in local storage for collecting after the round trip is complete.</p>
+	</div>
+	
+    <script type="text/javascript">
+    var cidmLoaderBaseUrl = 'https://static.auth.staging-services.qld.gov.au/widget/CIDM/profile/latest';
+    requirejs([ cidmLoaderBaseUrl + '/cidm-neo-loader.js'], function() {
+		requirejs(['cidm-neo', 'cidm-utils', 'es6-promise'], function(neo, utils, es6Promise) {
+	    $(document).ready(function() {
+	            $jc.qgcidm.initialise({
+                    home: 'http//localhost:8080',
+                    domain: 'login.auth.staging-services.qld.gov.au',
+                    service_name: 'CIDM Neo integration walkthrough guide',
+                    auth_domain: 'auth.staging-services.qld.gov.au',
+                    attributes_api_url:'https://api.auth.staging-services.qld.gov.au/v1',
+                    attributes_api_key:'DN3x8j0F5b8hxfBakq9h33pkcVuo47FH7qH4eaXY',
+                    clientID: '8aqIFVFNrhpws8dv3W5C3FANUMfiqzK7',
+                    level: 'Level_1',
+                    hub: 'https://static.auth.staging-services.qld.gov.au/hub/hub.html',
+                    returnTo: window.location.href, //you can add query parameters or the hard code the entire URL as desired
+					logoutUrl: window.location.href + '?status=loggedout', //you can change the query parameters or the entire URL as desired
+                    faq: "https://identity.qld.gov.au/help/faq.html",
+                    about: "https://www.my.qld.gov.au/intro/index.html",
+                    myaccount: "https://www.my.qld.gov.au",
+                        authoritative_attributes: {
+                            ShareAlways: false,
+                            Level: false,
+                            QID: true,
+                            DateOfBirth: false,
+                            Email: true,
+                            UserId: false,
+                            AAL: true,
+                            IAAL: true,
+                            IRAL: true,
+                            GivenName: false,
+                            FamilyName: false,
+                            MiddleName: false
+                        },
+                        self_asserted_attributes: {
+                            Picture: true,
+                            PreferredGivenName: false,
+                            PreferredFamilyName: false,
+                            PreferredMiddleName: false,
+                            AustralianBusinessNumber: false,
+                            SamlSubjectId: false,
+                            VANguardCredentialType: false,
+                            ABAUserId: false,
+                            ABAUserName: false,
+                            AUSkeyCommonName: false,
+                            AUSkeyEmailAddress: false,
+                            AUSkeyGivenNames: false,
+                            AUSkeySBRPersonId: false,
+                            AUSkeyStaleCRLMinutes: false,
+                            AUSkeySurname: false
+                            //Nickname:true
+                        }
+                });
+	        $jc('#qgcidm-avatar').avatar(); // make the id=qgcidm-avatar an avatar for the login widget
+	        $jc.qgcidm.enable();
+			
+		
+			//example tapping into Login and Logout callback chain
+			
+			$jc.qgcidm._onLogin.add(function(me) {
+				document.getElementById("your-element-id").innerHTML = "<pre>Look I've signed in</pre>";
+                  	});
+                        $jc.qgcidm._onLogout.add(function(me) {
+				console.log("log out - you need to preserve logs to see this");
+                        });
+
+            });
+
+    });
+});
+
+
+    </script>
+
+<script>
+//demo functions
+function hideDemos() {
+    $('.demo-func').hide();
+}
+function showConfig() {
+	$('#display-Neo-config').text(JSON.stringify($jc.qgcidm.config , undefined, 3)); 
+	$('#display-Neo-config').toggle();
+
+}
+
+
+function qgcidmProfile()
+{
+	$('#display-profile').text(JSON.stringify($jc.qgcidm.profile.attributes , undefined, 3)); 
+	$('#display-profile').toggle();
+}
+
+function qgcidmUpdateAttributes(directive)
+{
+
+	$jc.qgcidm.config.authoritative_attributes.QID = directive; 
+	$('#display-config').text(JSON.stringify($jc.qgcidm.config.authoritative_attributes, undefined, 3));
+	$('#display-config').show();
+	$('#display-profile').hide();
+	$('#display-Neo-config').hide();
+	$jc.qgcidm.updateProfile();
+}
+
+function qgcidmGetAttribute(attributeRequested)
+{
+$jc.qgcidm.searchAttribute(attributeRequested);
+$('#display-attribute').show();
+$('#display-attribute').text($jc.qgcidm.searchAttribute(attributeRequested));
+}
+
+var qgcidmGlobalJwt = '';
+function qgcidmStoreJwt()
+{
+qgcidmGetJwt(function(jwt)
+	{
+	  $('#display-jwt').text('qgcidmGlobalJwt = ' + jwt); //these have been added for display purposes
+	  $('#jwt-div').toggle();  //added for display purposes
+	  qgcidmGlobalJwt = jwt;
+	});
+}
+function qgcidmGetJwt(callback)
+{
+      $jc.qgcidm.getStorage('access_token',function(value){ value; callback(value)});
+}
+
+
+function promoteLoginLevel()
+{
+      $jc.qgcidm.config.level = 'Level_2'; //increase authentication level
+      $jc.qgcidm.enable();
+}
+function toggleApiDefinition()
+{
+$('#cust-attr-api-def').toggle();
+return null;
+}
+
+
+function toggleQgcidmObjectDef()
+{
+$('#qgcidm-object-def').toggle();
+return null;
+}
+
+</script>
+
+  </body>
+
+</html>

@@ -1,0 +1,1276 @@
+
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CIDM Wrapped Setup</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	
+    <link rel="icon" type="image/png" href="qld-crest-on-top-2linestacked-b-w.png" />
+
+    <!-- cidm-neo.css introduces style changes to allow the avatar to display as a horizontal list -->
+	<!-- This page has additional features using jquery, so to avoid racing conditions it is added here. The QGCIDM profile widget will also add jquery to the page a little later in the loading sequence -->
+	<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+	-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.0/jquery.min.js" crossorigin="anonymous"></script>
+
+	<!-- end jquery -->
+    <link rel="stylesheet" type="text/css" href="https://static.auth.cidmdev140cs.qgov.net.au/widget/CIDM/profile/latest/css/cidm.css">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+    <script src="https://use.fontawesome.com/d9e3b684a5.js"></script>
+
+
+	
+	
+	<!--SWE example -->
+	    	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta name="viewport" content="width=device-width" />
+    <!--[if !IE]><!--><link href="//fonts.googleapis.com/css?family=Lato:100,300,400,700,900,100italic,300italic,400italic,700italic,900italic" rel="stylesheet" type="text/css" /><!--<![endif]-->
+    <link rel="stylesheet" type="text/css" href="https://static.qgov.net.au/assets/v2/style/qgov.css" media="all" />
+
+	<link href="https://static.qgov.net.au/assets/v2/style/layout-large.css" rel="stylesheet" type="text/css" />
+	<link rel="shortcut icon" href="https://static.qgov.net.au/assets/v2/images/skin/favicon.ico" />
+   <!-- end SWE example -->
+	<style>
+	.container {
+	padding-left:6%;
+	padding-right:6%;}
+	a {
+	text-decoration:none !Important;}
+	.code-buttons {
+						padding-left: 20px !Important;
+						padding-right: 20px !Important;
+						padding-top: 5px !Important;
+						padding-bottom: 5px !Important;
+						border-radius: 5px !Important;
+						background-color: #78BA00 !Important;
+						border-color: #78BA00 !Important;
+						box-shadow: 0px 0px 0px #78BA00; !Important;
+						/*font-weight: bold !Important;*/
+						border: 1px solid #78BA00 !important
+	}
+	.code-buttons:focus {outline:0;}
+	.jwt-box { overflow-wrap: break-word;
+	}
+
+	</style>
+	
+	
+	
+  </head>
+ <body id="qld-gov-au" class="residents audience-index residents-index" onload="hideDemos()">
+ 
+ <div class="container">
+     <h1>CIDM Wrapped Developer Guide</h1>
+	 <h2>Intended audience</h2>
+	 <p>This developer guide / walkthrough of CIDM Wrapped is aimed specfically at front-end web developers. It is expected that the reader has a basic understanding of JavaScript, JSON, JQuery, REST services, HTML and CSS.
+	 <h2>How to use this guide</h2>
+	 <p>Ideally, you should run this HTML file as 'index.html' on http://localhost:8080 using a local server (e.g node.js / apache Tomcat etc.). CIDM Wrapped requires specific 'callback' URLs, and localhost:8080/index.html is one of the allowed URLs in our test environment. By starting on localhost:8080 you can begin building out your solution design immediately without having to wait for client keys, domain white-listing and allocation of official callback URLs (this will obviously come later).</p>
+	 	 
+	 <h2>Adding the CIDM Wrapped components into your webpages</h2>
+	  <p>Add the following snippet to the head html, this addresses CIDM Wrapped css and JavaScript dependencies.</p>
+	 <xmp>
+
+    <link rel="stylesheet" type="text/css" href="https://static.auth.cidmdev140cs.qgov.net.au/widget/CIDM/profile/latest/css/cidm.css">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+    <script src="https://use.fontawesome.com/d9e3b684a5.js"></script>
+	 
+	 </xmp>
+	 
+	 <p id = "initialisation-config"> Then add the following snippet to the body of your html, you can externalise this as a .js file to reduce clutter</p>
+	 
+	 <xmp>
+    <script type="text/javascript">
+    var cidmLoaderBaseUrl = 'https://static.auth.cidmdev140cs.qgov.net.au/widget/CIDM/profile/latest';
+    requirejs([ cidmLoaderBaseUrl + '/cidm-wrapped-loader.js'], function() {
+		requirejs(['cidm-neo', 'cidm-utils', 'es6-promise','jquery'], function(neo, utils, es6Promise, $) {
+	    $(document).ready(function() {
+            $.qgcidm.initialise({
+                    auth_domain: 'auth.cidmdev140cs.qgov.net.au',
+                    attributes_api_url:'https://api-customer-attributes.auth.cidmdev140cs.qgov.net.au/v1',
+                    attributes_api_key:'3KDbLiUiGC3eZt8dFQT0T5w2ga32GnDL2MLRfBJw',
+                    clientID: '1GyqWGGagVJXWzPZymj6NT86dauvzn2d',
+                    level: 'Level_1',
+                    returnTo: window.location.href,
+                    logoutUrl: window.location.href + '?status=loggedout',
+                    faq: "https://identity.qld.gov.au/help/faq.html",
+                    authoritative_attributes: {
+                        SharingPreference: true,
+                        Level: true,
+                        QID:true,
+                        DateOfBirth:false,
+                        Email:true,
+                        UserId:true,
+                        AuthenticationMethod:true,
+                        FirstName:false,
+                        FamilyName:false,
+                        MiddleName:false
+                    },
+                    self_asserted_attributes: {
+                        Name:true,
+                        Picture:true,
+                        AustralianBusinessNumber:false,
+                        SamlSubjectId:false,
+                        VANguardCredentialType:false,
+                        ABAUserId:false,
+                        ABAUserName:false,
+                        AUSkeyCommonName:false,
+                        AUSkeyEmailAddress:false,
+                        AUSkeyGivenNames:false,
+                        AUSkeySBRPersonId:false,
+                        AUSkeyStaleCRLMinutes:false,
+                        AUSkeySurname:false
+                    }
+                });
+	        $('#qgcidm-avatar').avatar(); // make the id=qgcidm-avatar an avatar for the login widget
+            $.qgcidm.enable();
+	        //uncomment below to tap into Login and Logout callback chain
+	        /*
+	        $('#attribute-data') //whatever id on the page you are wanting to modify
+	          .onLogin(function(me) {
+	            //show attribute data
+	            $(me).text(JSON.stringify($jc.qgcidm.profile.attributes, undefined, 3));
+	          })
+	          .onLogout(function(me) {
+	            // hide the attribute data
+	            $(me).text('You have logged out, attributes will display here after login..');
+	          });
+	        */
+	    });
+	  });
+	});
+    </script>
+	 
+	 </xmp>
+	 	
+		<h2>The profile widget</h2>
+		<p>The profile widget is essentially a set of styled buttons and pre-configured functions which can be placed inside a html element such as a div tag, list item, span tag etc. You simply need to add the id value you set up in the configuration step above to the relevant html element. In this case it is 'qgcidm-avatar'. Please note that there is no in built feature that allows the widget to be swapped dynamically between DOM elements or duplicated on screen. Once logged in, the avatar will either show the user's initials or an image (if the user's social network settings allow access to an image).</p>
+		<p>A 'perfect world' placement of the login widget is shown in the code below (if requested we can supply a complete barebones version of a login page), feel free to use it when testing out the feature (tip: if you have already added the scripts / includes above to a blank html document, then all you need to do is add this tag to your body and you will have a functional widget):</p>
+		<xmp>
+		<div id="qgcidm-avatar" style="text-align:right;width:100%;background:gray;"></div>
+		</xmp>
+		<p>Obviously, your app or site is not this simple, you may need to shoe-horn the widget into place by leveraging existing DOM elements and applying offsets as per the working example from the code below:</p>
+		<xmp>
+		<ul id="tools">
+		  <li class="nav-contact"><a accesskey="4" href="#">Contact us</a></li>
+		    <li  id="header-search">
+		      <form id="search-form" role="search">
+		        <div>					
+		          <label for="search-query" class="visuallyhidden">Search website</label>
+		            <input accesskey="5" type="search" name="query" id="search-query" size="27" value="" placeholder="Search website" />
+                    <button id="search-button" type="submit">Search</button>
+		        </div>
+		      </form>
+		  </li>
+		  <li >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li>
+		  <li class="last-child" id="qgcidm-avatar" style="padding-top:4px"></li>
+		</ul>
+		</xmp>
+		<p>It is recommended that experienced front-end developers complete the widget integration in alignment with your agencies templates, libraries and responsive display standards.</p>
+		<p>The example below shows the widget on the current QGov SWE header, it is not responsive and is only a rough view of what widget placement looks like. It is hoped that a SWE implementation template will be available for the widget in early 2018.</p>
+		<h4>Please login with a test account of your own creation using the widget below to begin exploring the features of the $jc.qgcidm client side object.</h4>
+		 </div>
+		<div id="header-wrapper"><div id="header"><div id="header-bg"></div><div class="box-sizing"><div class="max-width">
+		<h2>Site header</h2>
+		<div id="qg-coa"><a href="#">
+			<!--[if gt IE 8]><!--><img src="https://static.qgov.net.au/assets/v2/images/skin/qg-coa.svg" width="287" height="50" alt="Queensland Government home" /><!--<![endif]-->
+			<!--[if (lte IE 8)&(gt IE 6)]><img src="https://static.qgov.net.au/assets/v2/images/skin/qg-coa.png" width="287" height="50" alt="Queensland Government home" /><![endif]-->
+			<!--[if lte IE 6]><img src="https://static.qgov.net.au/assets/v2/images/skin/qg-coa-ie6.png" width="287" height="50" alt="Queensland Government home" /><![endif]-->
+			<img src="https://static.qgov.net.au/assets/v2/images/skin/qg-coa-print.png" class="print-version" alt="" />
+		</a></div>
+		<ul id="tools">
+			<li class="nav-contact"><a accesskey="4" href="#">Contact us</a></li>
+			<li  id="header-search">
+				<form id="search-form" role="search">
+					<div>
+											
+						<label for="search-query" class="visuallyhidden">Search website</label>
+						<input accesskey="5" type="search" name="query" id="search-query" size="27" value="" placeholder="Search website" />
+                        <button id="search-button" type="submit">Search</button>
+
+					</div>
+				</form>
+
+			</li>
+			<li >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li>
+			<li class="last-child" id="qgcidm-avatar" style="padding-top:4px"></li>
+		</ul>
+		<div id="nav-site"><ul>
+			<li class="nav-residents">
+				<a href="#">For Queenslanders</a>
+			</li>
+			<li class="nav-business">
+				<a href="#">Business and industry</a>
+			</li>
+		</ul></div>
+	</div></div></div></div>
+<!-- endnoindex -->
+     
+     
+    <div id="page-container">
+        <div class="max-width">
+            <div id="breadcrumbs">
+   
+    <ol><li class="nav-home"><a href="#">Queensland Government home</a></li>
+<li class="nav-residents"><a href="#">For Queenslanders</a></li>
+
+        <li class="last-child">Services for Queenslanders</li>
+    </ol>
+</div>            
+           
+        </div>
+    </div>
+	<div class="container">
+	  <h2>Making configuration changes to the $jc.qgcidm object</h2>
+	  <p>You can configure the the $jc.qgcidm object by passing the config object as an object in the $jc.qgcidm.initialise function (as is done at the top of the page). Alternatively you can modify $jc.qgcidm.config directly and then re-initialize the widget. It is advisable to enable verbose logging in the browser developer tools to get more information about how the $jc.qgcidm object is operating in the background. This is how you access the config:</p>
+	  <xmp>$jc.qgcidm.config;</xmp>
+	  <input type="button" class="code-buttons"  id= "show-config" onclick="showConfig()" value="Test">
+	  <pre class="demo-func" id="display-wrapped-config"></pre>
+	  
+	  <p>The primary use case for configuring the the $jc.qgcidm object after the page loads is changing the attribute request and updating the attribute data. The following commands modify and update attributes: </p>
+	  <h3 id="choosing-attributes">What attributes are available</h3>
+	  <p><strong>Self asserted attributes</strong></p>
+	  <p>These are attributes which have come from social media connections such as Google or Microsoft accounts, they include:</p>
+      <li>Picture</li>
+      <li>FirstName</li>
+      <li>FamilyName</li>
+	<li>MiddleName</li>
+	<li>AustralianBusinessNumber</li>
+	<li>SamlSubjectId</li>
+	<li>VANguardCredentialType</li>
+	<li>AUSkeyCommonName</li>
+	<li>AUSkeyEmailAddress</li>
+	<li>AUSkeyGivenNames</li>
+	<li>AUSkeySBRPersonId</li>
+	<li>AUSkeyStaleCRLMinutes</li>
+	<li>AUSkeySurname</li>
+	  </ul>
+	  <p><strong>Authoritative attributes</strong></p>
+	  <p>These are attributes which have come from an authoritative source such as CIDM:</p>
+	  <ul><li>QID</li>
+      <li>DateOfBirth</li>
+      <li>Email</li>
+      <li>UserId</li>
+	  <li>AuthenticationMethod</li>
+      <li>FirstName</li>
+      <li>FamilyName</li>
+	  </ul>
+	  <h3 id="removing-adding-attributes">Remove an attribute</h3>
+<xmp>$jc.qgcidm.config.authoritative_attributes.QID = false;
+$jc.qgcidm.updateProfile();</xmp>
+	<input type="button" class="code-buttons"  id= "update-false" onclick="qgcidmUpdateAttributes(false)" value="Test">
+<h3>Include an attribute</h3>
+<xmp>$jc.qgcidm.config.authoritative_attributes.QID = true;
+$jc.qgcidm.updateProfile();</xmp>
+<input type="button" class="code-buttons"  id= "update-true" onclick="qgcidmUpdateAttributes(true)" value="Test">
+
+
+	<pre id="display-config">The attibute list will be displayed here</pre>
+	  
+	<h2>Accessing attribute data on the browser-side</h2>
+	<p>We store attributes within the $jc.qgcidm object, the attributes can be accessed as a JSON array after the user logs in. Use the following command:</p>
+	<xmp>$jc.qgcidm.profile.attributes;</xmp>
+	<input type="button" class="code-buttons"  id= "show-hide-profile" onclick="qgcidmProfile()" value="Test">
+		<pre class="demo-func" id="display-profile"></pre>
+	<h2 id="on-login-logout-events">Event driven attribute population (i.e. tapping into the on-login and on-logout callback chain)</h2>
+	<p>You can tap into the login / logout callback chain by adding code under the initialsation as shown in the example <a href="#initialisation-config">above</a>. This page has been enabled, and the output of the demo code below is shown underneath: </p>
+	<xmp>
+$('#your-element-id') //whatever id on the page you are wanting to modify
+	.onLogin(function(me) {
+	   $(me).text('look, I\'ve signed in');
+	})
+	.onLogout(function(me) {
+		console.log('look, I've signed out');
+	});
+	</xmp>
+	<p>This demo code is running in the element below:</p>
+	<h4 id="your-element-id">If you are signed in, this text will be updated.</h4>
+
+		<h2 id="get-attribute">Accessing specific attribute values</h2>
+		<p>We have added a super simple way to get an attribute value in your client application, simply call the $jc.qgcidm.searchAttribute() function as per below: </p>
+		
+	<xmp>$jc.qgcidm.searchAttribute('Email')</xmp>
+	<input type="button" class="code-buttons"  id= "search-email-attribute" onclick="qgcidmGetAttribute('Email')" value="Test">
+	<xmp>$jc.qgcidm.searchAttribute('QID') //note this won't show if you have removed it in the previous section of the guide</xmp>
+	<input type="button" class="code-buttons"  id= "search-QID-attribute" onclick="qgcidmGetAttribute('QID')" value="Test">
+	<xmp>$jc.qgcidm.searchAttribute('AuthenticationMethod')</xmp>
+	<input type="button" class="code-buttons"  id= "search-authmeth-attribute" onclick="qgcidmGetAttribute('AuthenticationMethod')" value="Test">
+
+	<pre id="display-attribute">Attribute will display here</pre>
+	
+
+
+
+	<h2>Customers with 100 points of ID attached to their CIDM identity</h2>
+	<p>Users can currently provide evidence of identity online with CIDM to achieve Authentication Assurance Level 2 (AAL2) i.e 100 points of ID. You can require that only customers with AAL2 interact with your service. This enables you to build more personalised customer experiences when the identity is proven to 100 points. If the customer allows the sharing of their details, then you also get access to a verifed first name, last name and date of birth (useful for integrating with your back-office systems).</p>
+	<p>If you have a service which only wants AAL2 customers then simply specify 'Level_2' as the level in your <a href="#initialisation-config"> initialisation configuration</a> (please note that if they don't have AAL2 they will be asked to go through the evidence of identity process by providing 100 points of identity and then they might need to step-up their credential strength if they are using a social connection e.g Google)</p>
+    <h2>Promoting a user from AAL1 to AAL2</h2>
+	<p>It is common by default to log users in as AAL1 (which only requires a QGov account or another approved credential provider such as Google). If a part of your service requires additional evidence of identity (EOI), then you can offer customers to complete an EOI process online. CIDM Wrapped enables a re-authentication flow that will take the user through the EOI process and return them (if successful) with an AAL2 token along with access to the attributes they have agreed to share with your service (e.g. First name, middle name, family name date of birth). </p>
+	<p>The $jc.qgcidm object makes this easy, as shown in a simple example below:</p>
+
+	<xmp><input type="button" class="your-class"  id= "promote-to-aal2" onclick="promoteLoginLevel()" value="Strengthen your QGOV identity to 100 points">
+<script>
+  function promoteLoginLevel()
+    {
+      $jc.qgcidm.config.level = 'Level_2'; //increase authentication level
+      $jc.qgcidm.login(); //re-authenticate
+    }
+</script></xmp>
+    <p><strong>Why not give it a try?</strong></p>
+	<input type="button" class="code-buttons"  id= "promote-to-aal2" onclick="promoteLoginLevel()" value="Strengthen your QGov identity to 100 points">
+	<p>If you have already completed EOI and don't require step-up (Google Microsoft) then you will return automatically with an AAL2 token</p>
+	<p>Hint: since you are in CIDM test mode you can use the following mock data to complete EOI: <ul><li>SMS confirmation code (if required) - 40004000</li><li>Birth Certificate registration number - 555555</li><li>Passport document number - C5100511</li></ul>
+<p>Since the requested attributes are hardcoded into the configuration on this page, Level 2 attributes will not be accessible upon re-authentication. If your service requires compatibility with both Level 1 and Level 2 users then the Level 2 attributes should be set to 'true'. Alternatively, the attributes requested could be stored in local storage dynamically populated when the user is returned to the page.</p>	
+	<h3>Getting the best of both worlds</h3>
+	<p>If you offer an online service which can expand its customer offering relative to the identity level of the customer (e.g. My Account) then you can use the 'Level_1' connection as your default level and use the <a href= "#get-attribute">'AuthenticationMethod'</a> attribute to determine if the customer can be easily promoted to AAL2. The IRAL value indicates if the customer has completed EOI or not:</p><p><ul><li>IRAL1 = EOI <strong>not</strong> completed</li><li>IRAL2 = EOI completed</li></ul></p><p>The IAAL value indicates the customer's credential strength:</p><p><ul><li>IAAL1 = Customer will need to be stepped up before getting AAL2</li><li>IAAL2 = Customer won't need to be stepped up whilst being promoted to AAL2</li></ul></p>
+
+	<p>To determine the customers identity level and promote them automatically, simply run the following code after the customer has logged in:</p>
+	<xmp>
+if ($jc.qgcidm.searchAttribute('AuthenticationMethod').indexOf('IRAL2')>-1)
+  {
+      $jc.qgcidm.config.level = 'Level_2'; //increase authentication level
+      $jc.qgcidm.login(); //re-authenticate
+  }
+	</xmp>
+
+	<h2>Managing Access Tokens</h2>
+	<p>CIDM Wrapped uses Access Tokens to authenticate a user session. Access Tokens are a JSON Web Token (JWT) format and operate as bearer tokens, hence anybody else with access to the JWT can impersonate that user in systems that use the JWT to authenticate requests.</p><p>More information about JWTs can be found at <a href="https://jwt.io" target="_blank">jwt.io</a>.</p><p>It is critical that the customer's Access Token is not exposed, leaked or placed on a page where it could be lifted via a cross-site scripting attack.</p><p>The CIDM Wrapped Cross SSO solution maintains state in a centralised manner and distributes JWT through a silent authentication flow constrained by domain whitelisting. Tokens are stored in browser session storage under the namespace 'qgcidm_' to avoid conflicts with any other applications and this prefix is automatically prepended to requests made from the function getStorageItem(). 
+	</p><p>When customers logout, or their session times out, the JWT is removed from the Cross Site Storage Hub automatically. However when re-authenticating via a link (e.g. promoting a customer to AAL2) the JWT is not removed by default (as the customer is neither logged out nor timed out). The background scripts will not remove the previous AAL1 token as it is still perfectly valid, so it is important to flush the Cross Site Storage Hub when promoting to AAL2 to avoid your new token getting stuck and unused in the customer's address bar. Always keep an eye out for this when testing your solution.</p><p>The $jc.qgcidm object provides several functions for interactions with the CIDM Wrapped Cross Site Storage Hub shown below:</p>
+	<xmp>   $jc.qgcidm.getStorage(a,function(b){});  //e.g. log the JWT: $jc.qgcidm.getStorage('access_token',function(value){ console.log(value)}); //note that 'qgcidm_' prefix is not required here</xmp>
+	<xmp>   $jc.qgcidm.getStorageItem(a);  // a synchronous request e.g. $jc.qgcidm.getStorageItem('access_token'); //note that 'qgcidm_' prefix is not required here</xmp>
+	<xmp>   $jc.qgcidm.setStorage(a,function(b){});  //there are no known agency use cases for this function</xmp>
+	<xmp>   $jc.qgcidm.delStorage(a,b,c..); //e.g. remove JWT and session timers $jc.qgcidm.delStorage('access_token','modified','started');</xmp>
+	<xmp>   $jc.qgcidm.session_expired(); //signs the user out of CIDM Wrapped, clears local storage and provides an alert to indicate the session has expired</xmp>
+	<xmp>   $jc.qgcidm.logout(); //simply signs the user out of CIDM Wrapped and clears local storage.</xmp>
+	
+		
+	<h2 id="getting-jwt">Using CIDM Wrapped to do backend authentication</h2>
+	<p>When a customer signs in using CIDM Wrapped they receive a JWT which can be sent to your application server as part of a customer HTTP request (e.g. a form submission). You can then collect the JWT on your server-side and send it to the CIDM Customer Attributes API to authenticate and identify the the customer making the request. There are various patterns and symantics around sending JWT in HTTP requests, however they are typically sent in an 'Authorization' header sometimes with or without the prefix 'Bearer ', ultimately it is up to you to manage the transmission of JWT between your client and server. We recommend thorough penetration testing of your implementation prior to production release. CIDM Wrapped is regularly penetration tested and the CIDM team can answer questions you may have in relation to product security.</p>
+	<h3>Getting the JWT</h3>
+	<p>In order to pass the JWT to your server-side, you will first need to get the access to JWT from your browser. </p>
+	
+	<xmp><script>
+var qgcidmJwt = $jc.qgcidm.getStorageItem('access_token');
+
+</script></xmp>
+<input type="button" class="code-buttons"  id= "getting-jwt" onclick="qgcidmGetJwt()" value="Test">
+	<div id="jwt-div" class="jwt-box demo-func">
+	<p id="display-jwt">JWT will display here</p>
+	</div>
+
+	<h3>Calling the Customer Attribute API from your server-side</h3>
+<p>In the browser, the $jc.qgcidm object looks after calling the Customer Attributes API, however if you are verifying a JWT on your server-side then you will need to make a request to the Customer Attributes API directly. This is a REST based API which is aimed to be simple, multi-purposed and compatible with future identity and attribute release frameworks. It handles JWT verification and attribute release in the one API call. Currently it only supports the attributes attached to a CIDM account and will be expanded upon in 2019. You can call the Customer Attributes API using a simple GET request from whichever server-side HTTP request library of your choosing.</p>
+<p>Call the test version Customer Attributes API using the following configurations:</p>
+<h4>Endpoint (UAT)</h4>
+<xmp>https://api-customer-attributes.auth.cidmdev140cs.qgov.net.au/v1/customer_attributes</xmp>
+<h4>Request Method</h4>
+<xmp>HTTP GET</xmp>
+<h4>Request Headers</h4>
+<xmp>authorization : <Customers JWT Token>
+x-api-key (this is only for testing, won't work in production) : c93B17fVMbaagCAeibtgC6nbiM9ZbJkD2ST1lnfD</xmp>
+
+<h4>Query Parameters (any combination of the below, comma separated per attribute type)</h4>
+<xmp>authoritative_attributes=QID,DateOfBirth,Email,UserId,AuthenticationMethod,FirstName,FamilyName&self_asserted_attributes=Name,Picture,FirstName,FamilyName&sign=false</xmp>
+<h4>Response format</h4>
+<xmp>A successful request (200) will return a JSON formatted response similar to that found in $jc.qgcidm.profile.attributes. Anything other than 200 indicates a failure in authentication (typically 4xx) or service availability issue (typically 5xx)</xmp>
+<p>Specific documentation will be produced to cover the details of the Custommer Attributes API, in the mean time please refer to the Swagger API definition below for more details:<p>
+<input type="button" class="code-buttons"  id= "toggle-api-def" onclick="toggleApiDefinition()" value="Show / Hide API Definition">
+<div id="cust-attr-api-def" class="demo-func">
+<xmp>
+---
+swagger: "2.0"
+info:
+  version: "2017-11-06T11:38:32Z"
+  title: "CIDM NEO Customer Attributes API"
+  description: |
+    The Customer Attributes API supports the retrieval or both Verified and Unverified Customer Attributes
+    
+    ## Version History:
+    * 0.1 Initial Draft of Customer Attributes API.
+    * 0.2 Updated to have a POST and a GET for Customer Attributes.  The GET being a less complex API/request.
+    * 0.3 Removed QID from Urls as they're not available in the JWT
+    * 0.4 Renamed resources to customer_shared and customer_attributes
+
+    ## Security:
+    1. Requires AWS API Gateway Key in the x-api-key header
+    2. Requires Auth0 User JWT in the Authorization header
+
+    ## Usage:
+
+    ### Customer Sharing Preferences
+
+    #### Request:
+    ```
+
+    export CUSTOMER_JWT=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw
+    export API_KEY=cc2f0cbd-be66-431f-8b86-2f8d5ea30625
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H "x-api-key: ${API_KEY}" -H "Authorization: Bearer ${CUSTOMER_JWT}" https://api-customer-attributes.identity.test-services.qld.gov.au/v1/customer_shared
+    ```
+    #### Response:
+    ```JSON
+
+    {
+      "share" : "NOT_ALWAYS"
+    }
+    ```
+
+    ### Customer Attributes
+
+    #### Request:
+    ```
+
+    export CUSTOMER_JWT=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw
+    export API_KEY=cc2f0cbd-be66-431f-8b86-2f8d5ea30625
+
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H "x-api-key: ${API_KEY}" -H "Authorization: Bearer ${CUSTOMER_JWT}" https://api-customer-attributes.identity.test-services.qld.gov.au/v1/customer_attributes?authoritative_attributes=QID,DateOfBirth,Email&self_asserted_attributes=Name,UserId,AuthenticationMethod,Picture,FirstName,FamilyName,Nickname&sign=true
+
+    #Note the below won't actually work on the command line as it's over multiple lines.
+    #Actual request value needs to be a URL encoded string of the JSON object. i.e. JSON.stringify(ATTRIBUTES);
+    export ATTRIBUTES = "\
+      {
+        "attributes": [
+          {
+            "name": "GivenName",
+            "definition": {
+              "pedigree": "SELF_ASSERTED",
+              "signed": true,
+            }
+          },
+          {
+            "name": "FamilyName",
+            "definition": {
+              "pedigree": "AUTHORITATIVE",
+              "signed": true,
+            }
+          },
+          {
+            "name" : "Senior",
+            "definition": {
+              "source": "FORMULA",
+              "formula" : "Age >= 65"
+            }
+          }
+          ]
+      }"
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H "x-api-key: ${API_KEY}" -H "Authorization: Bearer ${CUSTOMER_JWT}" https://api-customer-attributes.identity.test-services.qld.gov.au/v1/customer_attributes?attributes=${ATTRIBUTES}
+
+    ```
+    #### Response:
+    ```JSON
+    {
+      "attributes" : [
+        {
+          "name" : "GivenName",
+          "value": "Jeremy",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "SELF_ASSERTED"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",
+            "pedigree": "SELF_ASSERTED",
+            "signed": true,
+          }
+        },
+        {
+          "name" : "FamilyName",
+          "value": "Ford",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",,
+            "pedigree": "AUTHORITATIVE",
+            "signed": true,
+          }
+        },
+        {
+          "name" : "Senior",
+          "value": "false",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "FORMULA",
+            "signed": false,
+            "formula" : "Age >= 65"
+          }
+        }
+
+      ],
+      "signed_attributes" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw"
+    }
+    ```
+
+    ### Verify Customer Attributes
+
+    #### Request:
+    ```
+
+    export SIGNED_ATTRIBUTES_JWT=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2Rldi5xbGQtZ292LWRldi5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDU1MTcyMjA0MzQ1NjM4MDY1NTkiLCJhdWQiOiJLdTFseE1rQlFXY0NETHF1Q1BDNXpvc1cxdmhSTWtvWiIsImV4cCI6MTUxMDYyMTEzNiwiaWF0IjoxNTEwNjEzOTM2fQ.Kt7ifNQlA9IlUoncFRmaGsE5Gx1f8i87ukwl7QdQvRw
+
+    export API_KEY=cc2f0cbd-be66-431f-8b86-2f8d5ea30625
+
+
+    curl -v -H "Content-Type: application/json" -H "Accept: application/json" -H "x-api-key: ${API_KEY}" -d '{"signed_attributes" :"${SIGNED_ATTRIBUTES_JWT}"}' https://api-customer-attributes.identity.test-services.qld.gov.au/v1/verify_customer_attributes
+
+    ```
+    #### Response:
+    ```JSON
+    {
+      "attributes" : [
+        {
+          "name" : "GivenName",
+          "value": "Jeremy",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",
+            "pedigree": "AUTHORITATIVE",
+            "signed": true,
+          }
+        },
+        {
+          "name" : "FamilyName",
+          "value": "Ford",
+          "metadata" : [
+            {
+              "name": "pedigree",
+              "value": "AUTHORITATIVE"
+            }
+          ],
+          "definition": {
+            "source": "ATTRIBUTE",,
+            "pedigree": "AUTHORITATIVE",
+            "signed": true,
+          }
+        }
+    }
+    ```
+
+
+
+
+host: "fx7afs9xvf.execute-api.ap-southeast-2.amazonaws.com"
+basePath: "/v1"
+schemes:
+- "https"
+paths:
+  /health:
+    get:
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: '#/definitions/HealthResponse'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        500:
+          description: "Unknown Server Error."
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - api_key: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        uri: "arn:aws:apigateway::lambda:path/2015-03-31/functions/arn:aws:lambda:::function:/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+  /customer_shared:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+    get:
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: '#/definitions/CustomerSharingPreference'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - api_key: []
+      - auth0JWTAuthorizer: []
+      x-amazon-apigateway-request-validator: "params-only"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        uri: "arn:aws:apigateway::lambda:path/2015-03-31/functions/arn:aws:lambda:::function:/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+  /customer_attributes:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+    get:
+      produces:
+      - "application/json"
+      parameters:
+      - name: "authoritative_attributes"
+        in: "query"
+        description: Comma separated list of Attribute Names that are required at an AUTHORITATIVE pedigree
+        required: false
+        type: "string"
+      - name: "self_asserted_attributes"
+        in: "query"
+        description: Comma separated list of Attribute Names that are required at atleast a SELF_ASSERTED pedigree
+        required: false
+        type: "string"
+      - name: "sign"
+        in: "query"
+        description: Boolean flag to indicate if all attributes should be signed
+        required: false
+        type: "string"
+      - name: "Authorization"
+        in: "header"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "HTTP 200 Success Response."
+          schema:
+            $ref: '#/definitions/CustomerAttributesResponse'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        204:
+          description: "No Content.  None of the requested Attributes had a value."
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        400:
+          description: "Bad request. No Attributes requested, or at least one invalid Attributes or Formula was provided. Do not attempt the request until the input has been fixed"
+          schema:
+            $ref: '#/definitions/ValidationError'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        401:
+          description: "Unauthorized request.  Missing, Invalid, or Expired credentials provided"
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        500:
+          description: "Unknown Server Error."
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - api_key: []
+      - auth0JWTAuthorizer: []
+      x-amazon-apigateway-request-validator: "params-only"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        uri: "arn:aws:apigateway::lambda:path/2015-03-31/functions/arn:aws:lambda:::function:/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        cacheNamespace: "gkwi0g"
+        cacheKeyParameters:
+        - "method.request.querystring.authoritative_attributes"
+        - "method.request.querystring.self_asserted_attributes"
+        - "method.request.querystring.sign"
+        - "method.request.header.Authorization"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+    post:
+      produces:
+      - "application/json"
+      parameters:
+      - name: attributes
+        in: body
+        description: Attributes to Retrieve
+        schema:
+          type: object
+          items:
+            $ref: '#/definitions/CustomerAttributesRequest'
+      responses:
+        200:
+          description: "HTTP 200 Success Response."
+          schema:
+            $ref: '#/definitions/CustomerAttributesResponse'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        204:
+          description: "No Content.  None of the requested Attributes had a value."
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        400:
+          description: "Bad request. No Attributes requested, or at least one invalid Attributes or Formula was provided. Do not attempt the request until the input has been fixed"
+          schema:
+            $ref: '#/definitions/ValidationError'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        401:
+          description: "Unauthorized request.  Missing, Invalid, or Expired credentials provided"
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        500:
+          description: "Unknown Server Error."
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - api_key: []
+      - auth0JWTAuthorizer: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        uri: "arn:aws:apigateway::lambda:path/2015-03-31/functions/arn:aws:lambda:::function:/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+  /verify_customer_attributes:
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+    post:
+      produces:
+      - "application/json"
+      parameters:
+        - name: signed_attributes
+          in: body
+          description: Signed Attributes to verify
+          schema:
+            type: object
+            items:
+              $ref: '#/definitions/VerifyAttributesRequest'
+
+      responses:
+        200:
+          description: "HTTP 200 Success Response."
+          schema:
+            $ref: '#/definitions/VerifyAttributesResponse'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+
+        400:
+          description: "Bad request. Invalid request payload"
+          schema:
+            $ref: '#/definitions/ValidationError'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        401:
+          description: "Unauthorized request. Provided signed_attributes value has been tampered with and must not be trusted"
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+        500:
+          description: "Unknown Server Error."
+          schema:
+            $ref: '#/definitions/Error'
+          headers:
+            Content-Type:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - api_key: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        uri: "arn:aws:apigateway::lambda:path/2015-03-31/functions/arn:aws:lambda:::function:/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "x-api-key"
+    in: "header"
+  auth0JWTAuthorizer:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+    x-amazon-apigateway-authtype: "custom"
+    x-amazon-apigateway-authorizer:
+      authorizerUri: "arn:aws:apigateway::lambda:path/2015-03-31/functions/arn:aws:lambda:::function:AuthorizationLambda/invocations"
+      authorizerResultTtlInSeconds: 300
+      type: "token"
+
+x-amazon-apigateway-gateway-responses:
+  DEFAULT_5XX:
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+  DEFAULT_4XX:
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+x-amazon-apigateway-request-validators:
+  params-only:
+    validateRequestParameters: true
+    validateRequestBody: false
+
+definitions:
+
+
+  CustomerSharingPreference:
+    type: object
+    required: [share]
+    properties:
+      share:
+        type: string
+        enum: [ALWAYS, NOT_ALWAYS]
+
+  CustomerAttributeDefinition:
+    type: object
+    required: [source]
+    properties:
+      source:
+        type: string
+        description: Source of Attribute Value
+        enum: [ATTRIBUTE, FORMULA]
+        default: ATTRIBUTE
+      pedigree:
+        type: string
+        enum: [AUTHORITATIVE, SELF_ASSERTED]
+        default: SELF_ASSERTED
+        description: AUTHORITATIVE or SELF_ASSERTED
+      signed:
+        type: boolean
+        default: false
+        description: True if the Attribute will be signed in the Response.
+      forumla:
+        type: string
+        description: Formula for calculating the Attribute Value (i.e. 'Age > 65') where source is FORMULA
+
+  CustomerAttributeRequest:
+    type: object
+    required: [name]
+    properties:
+      name:
+        type: string
+        description: Name of the Attribute in the Response
+      definition:
+        $ref: '#/definitions/CustomerAttributeDefinition'
+
+  AttributeMetadata:
+    type: object
+    required: [name, value]
+    properties:
+      name:
+        type: string
+        description: Name of the Metadata Attribute
+      value:
+        type: string
+        description: Value of the Metadata Attribute
+
+
+  CustomerAttributesRequest:
+    type: object
+    required: [attributes]
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeRequest'
+
+  CustomerAttributesResponse:
+    type: object
+    required: [attributes]
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeResponse'
+      signed_attributes:
+        type: string
+        description: JWT containing a Payload with each signed Attribute at the top level
+
+  CustomerAttributeResponse:
+    type: object
+    required: [name, value]
+    properties:
+      name:
+        type: string
+        description: Name of the Attribute in the Response
+      value:
+        type: string
+        description: Value of the Attribute in the Response
+      metadata:
+        type: array
+        items:
+          $ref: '#/definitions/AttributeMetadata'
+      definition:
+        $ref: '#/definitions/CustomerAttributeDefinition'
+
+  VerifyAttributesRequest:
+    type: object
+    required: [signed_attributes]
+    properties:
+      signed_attributes:
+        type: string
+        description: JWT returned from the attributes request
+
+  VerifyAttributesResponse:
+    type: object
+    required: [attributes]
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/CustomerAttributeResponse'
+
+  HealthResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        
+  Error:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      description:
+        type: string
+      link:
+        type: string
+
+  ValidationFailures:
+    type: object
+    properties:
+      property:
+        type: string
+        description: Property name
+      failure_reason:
+        type: string
+        description: Failure reason
+
+  ValidationError:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      description:
+        type: string
+      link:
+        type: string
+      validation_failures:
+        type: array
+        items:
+          $ref: '#/definitions/ValidationFailures'
+</xmp>
+</div>
+
+	
+	<h2>Centralising your CIDM Wrapped Callback URL</h2>
+	<p>If you have multiple web pages in your app from which customers can login (e.g a sign-in button in your header template) then you may need to manage customer redirection from a central callback URL. Anymore than 10 callback URLs starts to become an administrative burden, so if you have 10s or 100s of pages in your app or site then you need to set up a single callback URL, and save the return URL in local storage for collecting after the round trip is complete.</p>
+	</div>
+	
+    <script type="text/javascript">
+    var cidmLoaderBaseUrl = 'https://static.auth.cidmdev140cs.qgov.net.au/widget/CIDM/profile/latest';
+    requirejs([ cidmLoaderBaseUrl + '/cidm-wrapped-loader.js'], function() {
+		requirejs(['cidm-neo', 'cidm-utils', 'es6-promise','jquery'], function(neo, utils, es6Promise, $) {
+	    $(document).ready(function() {
+            $.qgcidm.initialise({
+                    auth_domain: 'auth.cidmdev140cs.qgov.net.au',
+                    attributes_api_url:'https://api-customer-attributes.auth.cidmdev140cs.qgov.net.au/v1',
+                    attributes_api_key:'3KDbLiUiGC3eZt8dFQT0T5w2ga32GnDL2MLRfBJw',
+                    clientID: '1GyqWGGagVJXWzPZymj6NT86dauvzn2d',
+                    level: 'Level_1',
+                    returnTo: window.location.href,
+					logoutUrl: window.location.href + '?status=loggedout',
+                    faq: "https://identity.qld.gov.au/help/faq.html",
+                    authoritative_attributes: {
+                        SharingPreference: true,
+                        Level: true,
+                        QID:true,
+                        DateOfBirth:false,
+                        Email:true,
+                        UserId:true,
+                        AuthenticationMethod:true,
+                        FirstName:false,
+                        FamilyName:false,
+                        MiddleName:false
+                    },
+                    self_asserted_attributes: {
+                        Name:true,
+                        Picture:true,
+                        AustralianBusinessNumber:false,
+                        SamlSubjectId:false,
+                        VANguardCredentialType:false,
+                        ABAUserId:false,
+                        ABAUserName:false,
+                        AUSkeyCommonName:false,
+                        AUSkeyEmailAddress:false,
+                        AUSkeyGivenNames:false,
+                        AUSkeySBRPersonId:false,
+                        AUSkeyStaleCRLMinutes:false,
+                        AUSkeySurname:false
+                    }
+                });
+
+            $('#qgcidm-avatar').avatar(); // make the id=avatar an avatar for the login widget
+
+
+
+            $.qgcidm.enable();
+			
+		
+			//example tapping into Login and Logout callback chain
+			
+			$('#your-element-id') //whatever id on the page you are wanting to modify
+				.onLogin(function(me) {
+				    $(me).text('look, I\'ve signed in');
+				})
+				.onLogout(function(me) {
+					console.log('look, I\'ve signed out');
+				});
+            });
+
+
+
+    });
+});
+
+
+    </script>
+
+<script>
+//demo functions
+function hideDemos() {
+    $('.demo-func').hide();
+}
+function showConfig() {
+	$('#display-wrapped-config').text(JSON.stringify($jc.qgcidm.config , undefined, 3));
+	$('#display-wrapped-config').toggle();
+
+}
+
+
+function qgcidmProfile()
+{
+	$('#display-profile').text(JSON.stringify($jc.qgcidm.profile.attributes , undefined, 3));
+	$('#display-profile').toggle();
+}
+
+function qgcidmUpdateAttributes(directive)
+{
+
+	$jc.qgcidm.config.authoritative_attributes.QID = directive;
+	$('#display-config').text(JSON.stringify($jc.qgcidm.config.authoritative_attributes, undefined, 3));
+	$('#display-config').show();
+	$('#display-profile').hide();
+	$('#display-wrapped-config').hide();
+	$jc.qgcidm.updateProfile();
+}
+
+function qgcidmGetAttribute(attributeRequested)
+{
+$jc.qgcidm.searchAttribute(attributeRequested);
+$('#display-attribute').show();
+$('#display-attribute').text($jc.qgcidm.searchAttribute(attributeRequested));
+}
+
+
+function qgcidmGetJwt()
+{
+
+		var jwt = $jc.qgcidm.getStorageItem('access_token');
+	  $('#display-jwt').text('qgcidmGlobalJwt = ' + jwt); //these have been added for display purposes
+	  $('#jwt-div').toggle();  //added for display purposes
+	  qgcidmGlobalJwt = jwt;
+}
+
+
+
+
+  function promoteLoginLevel()
+    {
+      $jc.qgcidm.config.level = 'Level_2'; //increase authentication level
+
+      $jc.qgcidm.login(); //re-authenticate
+    }
+function toggleApiDefinition()
+{
+$('#cust-attr-api-def').toggle();
+return null;
+}
+
+
+</script>
+
+  </body>
+
+</html>
